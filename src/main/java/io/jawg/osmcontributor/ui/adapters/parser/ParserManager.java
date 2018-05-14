@@ -59,19 +59,23 @@ public class ParserManager {
         TextTagParserImpl textParser = new TextTagParserImpl();
         OpeningTimeTagParserImpl openingTimeParserImpl = new OpeningTimeTagParserImpl();
         SingleChoiceTagParserImpl singleChoiceParser = new SingleChoiceTagParserImpl();
+        BusLineTagParserImpl busLineTagParser = new BusLineTagParserImpl();
 
         tagParsers.put(numberParser.getPriority(), numberParser);
         tagParsers.put(autoCompleteParser.getPriority(), autoCompleteParser);
         tagParsers.put(textParser.getPriority(), textParser);
         tagParsers.put(openingTimeParserImpl.getPriority(), openingTimeParserImpl);
         tagParsers.put(singleChoiceParser.getPriority(), singleChoiceParser);
+        tagParsers.put(busLineTagParser.getPriority(), busLineTagParser);
 
         valueParsers.put(singleChoiceParser.getType(), new SingleChoiceValueParserImpl());
         valueParsers.put(numberParser.getType(), new NumberValueParserImpl());
+        valueParsers.put(busLineTagParser.getType(), new BusLineValueParserImpl());
     }
 
     /**
      * Get tag name formated.
+     *
      * @param tagName tag name
      * @return tag name correctly formated
      */
@@ -86,6 +90,7 @@ public class ParserManager {
 
     /**
      * Get tag name formated.
+     *
      * @param tagName tag name
      * @return tag name correctly formated
      */

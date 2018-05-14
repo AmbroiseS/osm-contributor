@@ -43,7 +43,8 @@ public abstract class TagItem {
         NUMBER,                 // Use when tag value is a number (ex: height, floors)
         TEXT,                    // Use by default
         TIME,
-        SHELTER
+        SHELTER,
+        BUS_LINE
     }
 
     public Map<String, String> getValues() {

@@ -137,7 +137,7 @@
             },
             {
               "key": "route_ref",
-              "type": "TEXT"
+              "type": "BUS_LINE"
             },
             {
               "key": "note",

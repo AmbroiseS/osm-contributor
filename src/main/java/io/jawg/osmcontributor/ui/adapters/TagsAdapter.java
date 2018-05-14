@@ -35,6 +35,7 @@ import javax.inject.Inject;
 import io.jawg.osmcontributor.OsmTemplateApplication;
 import io.jawg.osmcontributor.model.entities.Poi;
 import io.jawg.osmcontributor.ui.adapters.binding.AutoCompleteViewBinder;
+import io.jawg.osmcontributor.ui.adapters.binding.BusLinesViewBinder;
 import io.jawg.osmcontributor.ui.adapters.binding.CheckedTagViewBinder;
 import io.jawg.osmcontributor.ui.adapters.binding.ConstantViewBinder;
 import io.jawg.osmcontributor.ui.adapters.binding.OpeningHoursViewBinder;
@@ -79,6 +80,7 @@ public class TagsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
         viewBinders.add(new ConstantViewBinder(activity));
         viewBinders.add(new OpeningHoursViewBinder(activity, this));
         viewBinders.add(new RadioChoiceViewBinder(activity, this));
+        viewBinders.add(new BusLinesViewBinder(activity, this));
 
         eventBus.register(this);
     }

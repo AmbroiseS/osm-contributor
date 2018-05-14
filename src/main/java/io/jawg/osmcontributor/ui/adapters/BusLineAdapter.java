@@ -1,0 +1,98 @@
+/**
+ * Copyright (C) 2016 eBusiness Information
+ * <p>
+ * This file is part of OSM Contributor.
+ * <p>
+ * OSM Contributor is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * <p>
+ * OSM Contributor is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * <p>
+ * You should have received a copy of the GNU General Public License
+ * along with OSM Contributor.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package io.jawg.osmcontributor.ui.adapters;
+
+import android.support.v7.widget.RecyclerView;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+
+import org.greenrobot.eventbus.EventBus;
+
+import java.util.List;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import io.jawg.osmcontributor.R;
+
+/**
+ * @author Tommy Buonomo on 11/07/16.
+ */
+public class BusLineAdapter extends RecyclerView.Adapter<BusLineAdapter.BusLineHolder> {
+    private EventBus eventBus;
+    private List<String> busLines;
+
+
+    public BusLineAdapter(List<String> busLines) {
+        this.busLines = busLines;
+       /* eventBus = EventBus.getDefault();
+        ((OsmTemplateApplication) activity.getApplication()).getOsmTemplateComponent().inject(this);*/
+    }
+
+    @Override
+    public BusLineHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        View viewRoot = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_bus_line, parent, false);
+        return new BusLineHolder(viewRoot);
+    }
+
+    @Override
+    public void onBindViewHolder(final BusLineHolder holder, int position) {
+        final String busLine = busLines.get(position);
+        holder.getTextViewLineBus().setText(busLine);
+        holder.getDeleteButton().setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                busLines.remove(busLine);
+                notifyDataSetChanged();
+            }
+        });
+
+    }
+
+    @Override
+    public int getItemCount() {
+        return busLines.size();
+    }
+
+
+    public static class BusLineHolder extends RecyclerView.ViewHolder {
+        @BindView(R.id.poi_bus_line_value)
+        TextView textViewMonthValue;
+
+        @BindView(R.id.item_bus_line_delete_button)
+        View deleteButton;
+
+
+        public BusLineHolder(View itemView) {
+            super(itemView);
+            ButterKnife.bind(this, itemView);
+        }
+
+        public TextView getTextViewLineBus() {
+            return textViewMonthValue;
+        }
+
+        public View getDeleteButton() {
+            return deleteButton;
+        }
+
+    }
+
+}

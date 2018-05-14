@@ -94,7 +94,7 @@
     <string name="delete_poi_confirm_message">Do you really want to delete this poi?</string>
     <string name="delete_poi_positive_btn">Delete</string>
     <string name="delete_poi_negative_btn">Cancel</string>
-    <string name="point_modification_forbidden">This version doesn\'t allowed points modification</string>
+    <string name="point_modification_forbidden">This version doesn\'t allow points modification</string>
     <string name="licenses_title">Licenses</string>
     <string name="osm_copyright" translatable="false"><![CDATA[<font color=\"#000\">© </font><font color=\"#1565C0\">OpenStreetMap </font><font color=\"#000\">contributors</font>]]></string>
     <string name="zoom_to_edit">This area is too large to load, please zoom more.</string>
