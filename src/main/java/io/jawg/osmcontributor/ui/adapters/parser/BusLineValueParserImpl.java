@@ -27,20 +27,21 @@ import javax.inject.Singleton;
 
 @Singleton
 public class BusLineValueParserImpl implements ValueParser<List<String>> {
-    public static final String SEP = ";";
-
+    private final String SEP = ";";
 
     @Inject
     public BusLineValueParserImpl() {
     }
 
-
     @Override
     public String toValue(List<String> busLines) {
         StringBuilder builder = new StringBuilder();
 
-        for (String s : busLines) {
-
+        for (int i = 0; i < busLines.size(); i++) {
+            if (i>0){
+                builder.append(SEP);
+            }
+            builder.append(busLines.get(i));
         }
         return builder.toString();
     }

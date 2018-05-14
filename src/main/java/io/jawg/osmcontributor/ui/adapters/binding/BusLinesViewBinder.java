@@ -59,6 +59,7 @@ public class BusLinesViewBinder extends CheckedTagViewBinder<TagItemBusLineViewH
 
 
         final BusLineAdapter adapter = new BusLineAdapter(finalBusLines);
+        adapter.setListener(() -> refreshData(tagItem, adapter, finalBusLines));
 
         holder.getBusLineRecyclerView().setAdapter(adapter);
         holder.getBusLineRecyclerView().setLayoutManager(new LinearLayoutManager(activity.get()));
@@ -71,16 +72,20 @@ public class BusLinesViewBinder extends CheckedTagViewBinder<TagItemBusLineViewH
         holder.getEditAddButton().setOnClickListener(
                 view -> {
                     if (!holder.getTextViewValue().getText().toString().trim().equals("")) {
-                        String text = holder.getTextViewValue().getText().toString();
-                        text = busLineValueParser.cleanValue(text);
-                        finalBusLines.add(text);
-                        tagItem.setValue(busLineValueParser.toValue(finalBusLines));
+                        finalBusLines.add(
+                                busLineValueParser.cleanValue(
+                                        holder.getTextViewValue().getText().toString()));
                         holder.getTextViewValue().getText().clear();
-                        adapter.notifyDataSetChanged();
+                        refreshData(tagItem, adapter, finalBusLines);
                     }
-
                 });
 
+    }
+
+    private void refreshData(TagItem tagItem, BusLineAdapter adapter, List<String> finalBusLines) {
+        tagItem.setValue(busLineValueParser.toValue(finalBusLines));
+        adapter.notifyDataSetChanged();
+        onTagItemChange.onTagItemUpdated(tagItem);
     }
 
     @Override
@@ -88,4 +93,5 @@ public class BusLinesViewBinder extends CheckedTagViewBinder<TagItemBusLineViewH
         View poiTagOpeningHoursLayout = LayoutInflater.from(parent.getContext()).inflate(R.layout.tag_item_bus_line, parent, false);
         return new TagItemBusLineViewHolder(poiTagOpeningHoursLayout);
     }
+
 }

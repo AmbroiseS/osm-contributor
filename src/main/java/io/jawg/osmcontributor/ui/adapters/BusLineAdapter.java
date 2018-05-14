@@ -24,26 +24,26 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import org.greenrobot.eventbus.EventBus;
-
 import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import io.jawg.osmcontributor.R;
 
-/**
- * @author Tommy Buonomo on 11/07/16.
- */
 public class BusLineAdapter extends RecyclerView.Adapter<BusLineAdapter.BusLineHolder> {
-    private EventBus eventBus;
     private List<String> busLines;
+    private BusAdapterListener busAdapterListener;
 
+    public void setListener(BusAdapterListener busAdapterListener) {
+        this.busAdapterListener = busAdapterListener;
+    }
+
+    public interface BusAdapterListener {
+        void onListChange();
+    }
 
     public BusLineAdapter(List<String> busLines) {
         this.busLines = busLines;
-       /* eventBus = EventBus.getDefault();
-        ((OsmTemplateApplication) activity.getApplication()).getOsmTemplateComponent().inject(this);*/
     }
 
     @Override
@@ -56,14 +56,10 @@ public class BusLineAdapter extends RecyclerView.Adapter<BusLineAdapter.BusLineH
     public void onBindViewHolder(final BusLineHolder holder, int position) {
         final String busLine = busLines.get(position);
         holder.getTextViewLineBus().setText(busLine);
-        holder.getDeleteButton().setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                busLines.remove(busLine);
-                notifyDataSetChanged();
-            }
+        holder.getDeleteButton().setOnClickListener(view -> {
+            busLines.remove(busLine);
+            busAdapterListener.onListChange();
         });
-
     }
 
     @Override
@@ -78,7 +74,6 @@ public class BusLineAdapter extends RecyclerView.Adapter<BusLineAdapter.BusLineH
 
         @BindView(R.id.item_bus_line_delete_button)
         View deleteButton;
-
 
         public BusLineHolder(View itemView) {
             super(itemView);
