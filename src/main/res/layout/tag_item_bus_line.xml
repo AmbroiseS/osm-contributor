@@ -57,8 +57,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            >
+            android:orientation="horizontal">
 
             <android.support.design.widget.TextInputLayout
                 android:layout_width="0dp"
@@ -68,13 +67,14 @@
                 android:paddingBottom="16dp"
                 android:paddingLeft="16dp"
                 android:paddingStart="16dp"
-                android:paddingTop="16dp"
-                android:theme="@style/TextInputLayout">
+                android:paddingTop="16dp">
+                <!--android:theme="@style/TextInputLayout">-->
 
-                <io.jawg.osmcontributor.ui.utils.views.customs.TypeFaceTextInputEditText
+                <AutoCompleteTextView
                     android:id="@+id/bus_line_input_edit_text"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:completionThreshold="1"
                     android:inputType="text|textAutoComplete"
                     android:textColor="#424242"
                     android:textSize="17sp" />

@@ -25,7 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
-import io.jawg.osmcontributor.ui.adapters.item.TagItem;
+import io.jawg.osmcontributor.ui.adapters.item.shelter.TagItem;
 import io.jawg.osmcontributor.ui.utils.Translator;
 
 /**

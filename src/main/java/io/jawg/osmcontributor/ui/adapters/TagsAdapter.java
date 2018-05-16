@@ -42,16 +42,16 @@ import io.jawg.osmcontributor.ui.adapters.binding.OpeningHoursViewBinder;
 import io.jawg.osmcontributor.ui.adapters.binding.RadioChoiceViewBinder;
 import io.jawg.osmcontributor.ui.adapters.binding.ShelterChoiceViewBinder;
 import io.jawg.osmcontributor.ui.adapters.binding.TagViewBinder;
-import io.jawg.osmcontributor.ui.adapters.item.SingleTagItem;
-import io.jawg.osmcontributor.ui.adapters.item.TagItem;
+import io.jawg.osmcontributor.ui.adapters.item.shelter.SingleTagItem;
+import io.jawg.osmcontributor.ui.adapters.item.shelter.TagItem;
 import io.jawg.osmcontributor.ui.adapters.parser.OpeningTimeValueParser;
 import io.jawg.osmcontributor.ui.events.edition.PleaseApplyOpeningTimeChange;
 import io.jawg.osmcontributor.utils.StringUtils;
 import io.jawg.osmcontributor.utils.edition.PoiChanges;
 
-import static io.jawg.osmcontributor.ui.adapters.item.TagMapper.getTagItems;
+import static io.jawg.osmcontributor.ui.adapters.item.shelter.TagMapper.getTagItems;
 
-public class TagsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements CheckedTagViewBinder.OnTagItemChange {
+public class TagsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements CheckedTagViewBinder.TagItemChangeListener {
     private List<TagItem> tagItemList = new ArrayList<>();
     private List<CheckedTagViewBinder> checkedViews = new ArrayList<>();
     private Poi poi;

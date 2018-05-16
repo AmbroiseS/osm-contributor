@@ -7,6 +7,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AutoCompleteTextView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,9 +17,11 @@ import javax.inject.Inject;
 import io.jawg.osmcontributor.OsmTemplateApplication;
 import io.jawg.osmcontributor.R;
 import io.jawg.osmcontributor.ui.adapters.BusLineAdapter;
-import io.jawg.osmcontributor.ui.adapters.item.TagItem;
+import io.jawg.osmcontributor.ui.adapters.BusLineSuggestionAdapter;
+import io.jawg.osmcontributor.ui.adapters.item.shelter.TagItem;
 import io.jawg.osmcontributor.ui.adapters.parser.BusLineValueParserImpl;
 import io.jawg.osmcontributor.ui.adapters.parser.ParserManager;
+import io.jawg.osmcontributor.ui.managers.PoiManager;
 import io.jawg.osmcontributor.ui.utils.views.DividerItemDecoration;
 import io.jawg.osmcontributor.ui.utils.views.holders.TagItemBusLineViewHolder;
 
@@ -27,8 +30,13 @@ public class BusLinesViewBinder extends CheckedTagViewBinder<TagItemBusLineViewH
     @Inject
     BusLineValueParserImpl busLineValueParser;
 
-    public BusLinesViewBinder(Activity activity, OnTagItemChange onTagItemChange) {
-        super(activity, onTagItemChange);
+    @Inject
+    PoiManager poiManager;
+
+    private AutoCompleteTextView modelText;
+
+    public BusLinesViewBinder(Activity activity, TagItemChangeListener tagItemChangeListener) {
+        super(activity, tagItemChangeListener);
         ((OsmTemplateApplication) activity.getApplication()).getOsmTemplateComponent().inject(this);
     }
 
@@ -43,49 +51,60 @@ public class BusLinesViewBinder extends CheckedTagViewBinder<TagItemBusLineViewH
         this.content = holder.getContent();
 
         holder.getTextViewKey().setText(ParserManager.parseTagName(tagItem.getKey(), holder.getContent().getContext()));
-        List<String> busLines = null;
+        final List<String> busLines = new ArrayList<>();
         try {
-            busLines = busLineValueParser.fromValue(tagItem.getValue());
+            busLines.addAll(busLineValueParser.fromValue(tagItem.getValue()));
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
             tagItem.setConform(false);
         }
 
-        if (busLines == null) {
-            busLines = new ArrayList<>();
-        }
+        BusLineAdapter adapter = new BusLineAdapter(busLines);
 
-        List<String> finalBusLines = busLines;
-
-
-        final BusLineAdapter adapter = new BusLineAdapter(finalBusLines);
-        adapter.setListener(() -> refreshData(tagItem, adapter, finalBusLines));
-
-        holder.getBusLineRecyclerView().setAdapter(adapter);
-        holder.getBusLineRecyclerView().setLayoutManager(new LinearLayoutManager(activity.get()));
-        holder.getBusLineRecyclerView().setHasFixedSize(false);
+        RecyclerView recyclerView = holder.getBusLineRecyclerView();
+        recyclerView.setAdapter(adapter);
+        recyclerView.setLayoutManager(new LinearLayoutManager(activity.get()));
+        recyclerView.setHasFixedSize(false);
         RecyclerView.ItemAnimator itemAnimator = new DefaultItemAnimator();
         itemAnimator.setAddDuration(300);
-        holder.getBusLineRecyclerView().setItemAnimator(itemAnimator);
-        holder.getBusLineRecyclerView().addItemDecoration(new DividerItemDecoration(activity.get()));
+        recyclerView.setItemAnimator(itemAnimator);
+        recyclerView.addItemDecoration(new DividerItemDecoration(activity.get()));
+
+        adapter.setRemoveBusListener((lineRemoved) -> {
+            tagItem.setValue(busLineValueParser.toValue(busLines));
+            onTagChange(tagItem);
+        });
 
         holder.getEditAddButton().setOnClickListener(
                 view -> {
-                    if (!holder.getTextViewValue().getText().toString().trim().equals("")) {
-                        finalBusLines.add(
-                                busLineValueParser.cleanValue(
-                                        holder.getTextViewValue().getText().toString()));
-                        holder.getTextViewValue().getText().clear();
-                        refreshData(tagItem, adapter, finalBusLines);
+                    String lineValue = holder.getTextViewValue().getText().toString();
+                    if (!lineValue.trim().equals("")) {
+                        addBusLine(tagItem, busLines, adapter, lineValue);
                     }
+                    holder.getTextViewValue().getText().clear();
                 });
 
+        BusLineSuggestionAdapter suggestionAdapter = new BusLineSuggestionAdapter(activity.get().getApplicationContext(), poiManager);
+        modelText = holder.getTextViewValue();
+        modelText.setAdapter(suggestionAdapter);
+        modelText.setOnItemClickListener((parent, view, position, id) -> {
+            addBusLine(tagItem, busLines, adapter, suggestionAdapter.getItem(position));
+            holder.getTextViewValue().getText().clear();
+        });
+        modelText.setDropDownHeight((int) (120 * activity.get().getApplication().getResources().getDisplayMetrics().density));
     }
 
-    private void refreshData(TagItem tagItem, BusLineAdapter adapter, List<String> finalBusLines) {
-        tagItem.setValue(busLineValueParser.toValue(finalBusLines));
-        adapter.notifyDataSetChanged();
-        onTagItemChange.onTagItemUpdated(tagItem);
+    private void addBusLine(TagItem tagItem, List<String> busLines, BusLineAdapter adapter, String lineValue) {
+        busLines.add(busLineValueParser.cleanValue(lineValue));
+        tagItem.setValue(busLineValueParser.toValue(busLines));
+        adapter.notifyItemInserted(busLines.size() - 1);
+        onTagChange(tagItem);
+    }
+
+    private void onTagChange(TagItem tagItem) {
+        if (tagItemChangeListener != null) {
+            tagItemChangeListener.onTagItemUpdated(tagItem);
+        }
     }
 
     @Override

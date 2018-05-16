@@ -16,33 +16,22 @@
  * You should have received a copy of the GNU General Public License
  * along with OSM Contributor.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.jawg.osmcontributor.ui.adapters.item;
+package io.jawg.osmcontributor.model.events;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
-public class SingleTagItem extends TagItem {
+public class BusSuggestionsLoaded {
+    private List<String> suggestions;
 
-    private SingleTagItem(SingleTagItemBuilder builder) {
-        super(builder);
+    public BusSuggestionsLoaded(List<String> suggestions) {
+        this.suggestions = suggestions;
     }
 
-    public static class SingleTagItemBuilder extends TagItemBuilder {
-
-        public SingleTagItemBuilder(String key, String value) {
-            super(key, value);
-        }
-
-        @Override
-        public SingleTagItem build() {
-            return new SingleTagItem(this);
-        }
+    public List<String> getPoiTypes() {
+        return suggestions;
     }
 
-    @Override
-    public Map<String, String> getOsmValues() {
-        HashMap<String, String> stringStringHashMap = new HashMap<>();
-        stringStringHashMap.put(key, value);
-        return stringStringHashMap;
+    public void setPoiTypes(List<String> poiTypes) {
+        this.suggestions = poiTypes;
     }
 }

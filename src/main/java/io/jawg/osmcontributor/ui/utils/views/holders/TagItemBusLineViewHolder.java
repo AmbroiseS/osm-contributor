@@ -18,10 +18,9 @@
  */
 package io.jawg.osmcontributor.ui.utils.views.holders;
 
-
-import android.support.design.widget.TextInputEditText;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
+import android.widget.AutoCompleteTextView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -39,7 +38,7 @@ public class TagItemBusLineViewHolder extends RecyclerView.ViewHolder {
     TextView textViewKey;
 
     @BindView(R.id.bus_line_input_edit_text)
-    TextInputEditText textViewValue;
+    AutoCompleteTextView textViewValue;
 
     @BindView(R.id.tag_item_edit_bus_line_add_button)
     View editAddButton;
@@ -51,7 +50,7 @@ public class TagItemBusLineViewHolder extends RecyclerView.ViewHolder {
         return editAddButton;
     }
 
-    public TextInputEditText getTextViewValue() {
+    public AutoCompleteTextView getTextViewValue() {
         return textViewValue;
     }
 

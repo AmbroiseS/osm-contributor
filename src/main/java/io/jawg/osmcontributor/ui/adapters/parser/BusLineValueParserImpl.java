@@ -18,8 +18,8 @@
  */
 package io.jawg.osmcontributor.ui.adapters.parser;
 
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -31,6 +31,7 @@ public class BusLineValueParserImpl implements ValueParser<List<String>> {
 
     @Inject
     public BusLineValueParserImpl() {
+        //empty
     }
 
     @Override
@@ -38,7 +39,7 @@ public class BusLineValueParserImpl implements ValueParser<List<String>> {
         StringBuilder builder = new StringBuilder();
 
         for (int i = 0; i < busLines.size(); i++) {
-            if (i>0){
+            if (i > 0) {
                 builder.append(SEP);
             }
             builder.append(busLines.get(i));
@@ -54,11 +55,17 @@ public class BusLineValueParserImpl implements ValueParser<List<String>> {
     @Override
     public List<String> fromValue(String data) {
         if (data == null || data.trim().isEmpty()) {
-            return null;
+            return Collections.emptyList();
         }
-        //todo more checks
-        String[] openingTimes = data.split(SEP);
-        return new ArrayList<>(Arrays.asList(openingTimes));
+        String[] lines = data.split(SEP);
+        List<String> toReturn = Arrays.asList(lines);
+        for (String s : toReturn) {
+            if (s == null || s.equals("")) {
+                toReturn.remove(s);
+            }
+
+        }
+        return toReturn;
     }
 
     @Override

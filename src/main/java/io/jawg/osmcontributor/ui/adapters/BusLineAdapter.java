@@ -32,14 +32,14 @@ import io.jawg.osmcontributor.R;
 
 public class BusLineAdapter extends RecyclerView.Adapter<BusLineAdapter.BusLineHolder> {
     private List<String> busLines;
-    private BusAdapterListener busAdapterListener;
+    private RemoveBusListener removeBusListener;
 
-    public void setListener(BusAdapterListener busAdapterListener) {
-        this.busAdapterListener = busAdapterListener;
+    public void setRemoveBusListener(RemoveBusListener removeBusListener) {
+        this.removeBusListener = removeBusListener;
     }
 
-    public interface BusAdapterListener {
-        void onListChange();
+    public interface RemoveBusListener {
+        void onLineRemoved(String busLine);
     }
 
     public BusLineAdapter(List<String> busLines) {
@@ -58,7 +58,8 @@ public class BusLineAdapter extends RecyclerView.Adapter<BusLineAdapter.BusLineH
         holder.getTextViewLineBus().setText(busLine);
         holder.getDeleteButton().setOnClickListener(view -> {
             busLines.remove(busLine);
-            busAdapterListener.onListChange();
+            removeBusListener.onLineRemoved(busLine);
+            notifyItemRemoved(position);
         });
     }
 
