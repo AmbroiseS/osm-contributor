@@ -84,20 +84,26 @@ public class BusLinesViewBinder extends CheckedTagViewBinder<TagItemBusLineViewH
                     holder.getTextViewValue().getText().clear();
                 });
 
-        BusLineSuggestionAdapter suggestionAdapter = new BusLineSuggestionAdapter(activity.get().getApplicationContext(), poiManager);
+        BusLineSuggestionAdapter suggestionAdapter = new BusLineSuggestionAdapter(activity.get().getApplicationContext(), poiManager, busLineValueParser, busLines);
         modelText = holder.getTextViewValue();
         modelText.setAdapter(suggestionAdapter);
         modelText.setOnItemClickListener((parent, view, position, id) -> {
             addBusLine(tagItem, busLines, adapter, suggestionAdapter.getItem(position));
             holder.getTextViewValue().getText().clear();
         });
-        modelText.setDropDownHeight((int) (120 * activity.get().getApplication().getResources().getDisplayMetrics().density));
+      //  modelText.setDropDownHeight((int) (120 * activity.get().getApplication().getResources().getDisplayMetrics().density));
     }
 
     private void addBusLine(TagItem tagItem, List<String> busLines, BusLineAdapter adapter, String lineValue) {
-        busLines.add(busLineValueParser.cleanValue(lineValue));
+        if (busLineValueParser.lineContainsMultipleValues(lineValue)) {
+            List<String> temp= busLineValueParser.fromValue(lineValue);
+            busLines.addAll(temp);
+            adapter.notifyItemRangeInserted(busLines.size()-temp.size(), busLines.size()-1);
+        } else {
+            busLines.add(busLineValueParser.cleanValue(lineValue));
+            adapter.notifyItemInserted(busLines.size() - 1);
+        }
         tagItem.setValue(busLineValueParser.toValue(busLines));
-        adapter.notifyItemInserted(busLines.size() - 1);
         onTagChange(tagItem);
     }
 

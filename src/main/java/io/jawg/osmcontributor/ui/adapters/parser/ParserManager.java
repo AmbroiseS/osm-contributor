@@ -99,21 +99,8 @@ public class ParserManager {
     }
 
     @SuppressWarnings("unchecked")
-    public static String getValue(String value, TagItem.Type tagType) {
+    public static boolean supportValue(String value, TagItem.Type tagType) {
         ValueParser valueParser = valueParsers.get(tagType);
-        if (valueParser == null) {
-            if (value == null) {
-                return "";
-            }
-            return value;
-        }
-
-        if (tagParsers.get(valueParser.getPriority()).supports(value)) {
-            return (String) valueParser.fromValue(value);
-        }
-        if (value == null) {
-            return "";
-        }
-        return value;
+        return valueParser == null || tagParsers.get(valueParser.getPriority()).supports(value);
     }
 }

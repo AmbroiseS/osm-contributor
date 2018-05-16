@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.jawg.osmcontributor.R;
+import io.jawg.osmcontributor.ui.adapters.parser.BusLineValueParserImpl;
 import io.jawg.osmcontributor.ui.managers.PoiManager;
 import timber.log.Timber;
 
@@ -41,12 +42,16 @@ public class BusLineSuggestionAdapter extends BaseAdapter implements Filterable 
     private List<String> suggestionsList;
     private Filter filter;
     private PoiManager poiManager;
+    private BusLineValueParserImpl busLineValueParser;
+    private List<String> currentValues;
 
-    public BusLineSuggestionAdapter(Context context, PoiManager poiManager) {
+    public BusLineSuggestionAdapter(Context context, PoiManager poiManager, BusLineValueParserImpl busLineValueParser, List<String> currentValues) {
         layoutInflater = LayoutInflater.from(context);
         suggestionsList = new ArrayList<>();
         filter = new SuggestionFilter();
-        this.poiManager =poiManager;
+        this.poiManager = poiManager;
+        this.busLineValueParser = busLineValueParser;
+        this.currentValues = currentValues;
     }
 
     @Override
@@ -110,10 +115,20 @@ public class BusLineSuggestionAdapter extends BaseAdapter implements Filterable 
                 return null;
             }
             String query = constraint.toString().trim();
-            List values = poiManager.getValuesForBusLinesAutocompletion(query);
+            List<String> values = poiManager.getValuesForBusLinesAutocompletion(query);
+            List<String> filtered = new ArrayList<>();
+            //parse values formatted as xx;yy;zz and keep only the ones matching the query
+            for (String s : values) {
+                List<String> temp = busLineValueParser.fromValue(s);
+                for (String te : temp) {
+                    if (!currentValues.contains(te) && !filtered.contains(te) && te.contains(query)) {
+                        filtered.add(te);
+                    }
+                }
+            }
 
             FilterResults results = new FilterResults();
-            results.values = values;
+            results.values = filtered;
             results.count = values.size();
             return results;
         }

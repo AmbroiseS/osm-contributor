@@ -18,6 +18,7 @@
  */
 package io.jawg.osmcontributor.ui.adapters.parser;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -47,9 +48,8 @@ public class BusLineValueParserImpl implements ValueParser<List<String>> {
         return builder.toString();
     }
 
-    //replace character used as separator in string to avoid parsing issues
     public String cleanValue(String value) {
-        return value.replaceAll(SEP, ",");
+        return value.trim();
     }
 
     @Override
@@ -58,12 +58,11 @@ public class BusLineValueParserImpl implements ValueParser<List<String>> {
             return Collections.emptyList();
         }
         String[] lines = data.split(SEP);
-        List<String> toReturn = Arrays.asList(lines);
-        for (String s : toReturn) {
-            if (s == null || s.equals("")) {
-                toReturn.remove(s);
+        List<String> toReturn = new ArrayList<>();
+        for (String s : Arrays.asList(lines)) {
+            if (s != null && !s.trim().isEmpty()) {
+                toReturn.add(s.trim());
             }
-
         }
         return toReturn;
     }
@@ -71,6 +70,10 @@ public class BusLineValueParserImpl implements ValueParser<List<String>> {
     @Override
     public int getPriority() {
         return ParserManager.PRIORITY_HIGH;
+    }
+
+    public boolean lineContainsMultipleValues(String valueEnteredByUser) {
+        return valueEnteredByUser.contains(SEP);
     }
 
 }
