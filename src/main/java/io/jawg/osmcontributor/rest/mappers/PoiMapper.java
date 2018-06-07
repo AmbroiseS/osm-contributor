@@ -32,10 +32,11 @@ import io.jawg.osmcontributor.model.entities.PoiTag;
 import io.jawg.osmcontributor.model.entities.PoiType;
 import io.jawg.osmcontributor.model.entities.PoiTypeTag;
 import io.jawg.osmcontributor.model.entities.RelationId;
+import io.jawg.osmcontributor.rest.NetworkException;
 import io.jawg.osmcontributor.rest.dtos.osm.BlockDto;
 import io.jawg.osmcontributor.rest.dtos.osm.NdDto;
 import io.jawg.osmcontributor.rest.dtos.osm.NodeDto;
-import io.jawg.osmcontributor.rest.dtos.osm.OsmBlockDto;
+import io.jawg.osmcontributor.rest.dtos.osm.OsmDtoInterface;
 import io.jawg.osmcontributor.rest.dtos.osm.PoiDto;
 import io.jawg.osmcontributor.rest.dtos.osm.RelationIdDto;
 import io.jawg.osmcontributor.rest.dtos.osm.TagDto;
@@ -57,13 +58,29 @@ public class PoiMapper {
         return convertDtoToPoi(true, poiTypeDao.queryForAll(), blockDto.getNodeDtoList().get(0), blockDto.getRelationIdDtoList());
     }
 
-    public List<Poi> convertPois(List<OsmBlockDto> osmBlockDtos) {
+    public List<Poi> convertPois(OsmDtoInterface osmDto) {
+        if (osmDto != null) {
+            throw new NetworkException();
+        }
+        List<Poi> pois = convertDtosToPois(osmDto.getNodeDtoList());
+        pois.addAll(convertDtosToPois(osmDto.getWayDtoList()));
+        return pois;
+
+    }
+
+    public List<Poi> convertPois(List<? extends OsmDtoInterface> osmDtos) {
         List<Poi> pois = new ArrayList<>();
-        for (OsmBlockDto osmBlockDto : osmBlockDtos) {
-            for (BlockDto blockDto : osmBlockDto.getBlockList()) {
-                if (blockDto.getNodeDtoList().size() >= 1) {
-                    pois.add(convertBlockToPoi(blockDto));
+        if (FlavorUtils.isBus()) {
+            for (OsmDtoInterface osmBlockDto : osmDtos) {
+                for (BlockDto blockDto : osmBlockDto.getBlockList()) {
+                    if (blockDto.getNodeDtoList().size() >= 1) {
+                        pois.add(convertBlockToPoi(blockDto));
+                    }
                 }
+            }
+        } else {
+            for (OsmDtoInterface osmDto : osmDtos) {
+                pois.addAll(convertPois(osmDto));
             }
         }
         return pois;

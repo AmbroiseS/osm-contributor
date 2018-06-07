@@ -30,5 +30,5 @@ public interface OverpassRestClient {
     Call<OsmDto> sendRequest(@Body String data);
 
     @POST("0.6")
-    Call<OsmBlockDto> sendCustomRequest(@Body String data);
+    Call<OsmBlockDto> sendRequestBlock(@Body String data);
 }

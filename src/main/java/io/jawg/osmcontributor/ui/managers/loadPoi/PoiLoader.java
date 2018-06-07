@@ -30,10 +30,12 @@ import io.jawg.osmcontributor.rest.Backend;
 import io.jawg.osmcontributor.rest.NetworkException;
 import io.jawg.osmcontributor.rest.dtos.osm.BlockDto;
 import io.jawg.osmcontributor.rest.dtos.osm.NodeDto;
-import io.jawg.osmcontributor.rest.dtos.osm.OsmBlockDto;
+import io.jawg.osmcontributor.rest.dtos.osm.OsmDtoInterface;
 import io.jawg.osmcontributor.rest.dtos.osm.PoiDto;
+import io.jawg.osmcontributor.rest.dtos.osm.WayDto;
 import io.jawg.osmcontributor.rest.mappers.PoiMapper;
 import io.jawg.osmcontributor.ui.utils.BooleanHolder;
+import io.jawg.osmcontributor.utils.FlavorUtils;
 import rx.Subscriber;
 import timber.log.Timber;
 
@@ -49,6 +51,7 @@ import static io.jawg.osmcontributor.ui.managers.loadPoi.PoiLoadingProgress.Load
 public class PoiLoader {
 
     public static final int POI_PAGE_MAPPING = 5;
+    private int counter;
     private final PoiDao poiDao;
     private final MapAreaDao mapAreaDao;
     private final Backend backend;
@@ -58,7 +61,7 @@ public class PoiLoader {
     private BooleanHolder mustBeKilled;
     List<PoiType> availableTypes;
     PoiTypeDao poiTypeDao;
-    List<OsmBlockDto> osmDtos;
+    List<? extends OsmDtoInterface> osmDtos;
     List<PoiDto> nodeDtos = new ArrayList<>();
     List<BlockDto> blockDtos = new ArrayList<>();
 
@@ -174,27 +177,39 @@ public class PoiLoader {
         blockDtos.clear();
         osmDtos = backend.getPoisDtosInBox(toLoadArea.getBox());
 
-        for (OsmBlockDto osmDto : osmDtos) {
+        for (OsmDtoInterface osmDto : osmDtos) {
             killIfNeeded();
-            if (osmDto != null && osmDto.getBlockList() != null) {
-                for (BlockDto blockDto : osmDto.getBlockList()) {
-                    if (blockDto != null && blockDto.getNodeDtoList() != null) {
-                        for (NodeDto nodeDto : blockDto.getNodeDtoList()) {
-                            if (nodeDto != null) {
-                                blockDtos.add(blockDto);
-                                nodeDtos.add(nodeDto);
+            if (FlavorUtils.isBus()){
+                if (osmDto != null && osmDto.getBlockList() != null) {
+                    for (BlockDto blockDto : osmDto.getBlockList()) {
+                        if (blockDto != null && blockDto.getNodeDtoList() != null) {
+                            for (NodeDto nodeDto : blockDto.getNodeDtoList()) {
+                                if (nodeDto != null) {
+                                    blockDtos.add(blockDto);
+                                }
                             }
                         }
                     }
                 }
+            } else {
+                if (osmDto != null) {
+                    List<NodeDto> nodeDtoList = osmDto.getNodeDtoList();
+                    if (nodeDtoList != null) {
+                        nodeDtos.addAll(nodeDtoList);
+                    }
+                    List<WayDto> wayDtoList = osmDto.getWayDtoList();
+                    if (wayDtoList != null) {
+                        nodeDtos.addAll(wayDtoList);
+                    }
+                }
             }
+
         }
 
         osmDtos.clear();
 
         loadingStatus = MAPPING_POIS;
-        totalsElements = nodeDtos.size();
-        totalsElements = blockDtos.size();
+        totalsElements = nodeDtos.size()>=blockDtos.size() ? nodeDtos.size() : blockDtos.size();
 
         if (clean) {
             cleanArea(toLoadArea);
@@ -204,22 +219,34 @@ public class PoiLoader {
     }
 
     private void savePoisInDB() {
-        int i = 0;
-        //   for (PoiDto dto : nodeDtos) {
-        for (BlockDto dto : blockDtos) {
-            killIfNeeded();
-            savePoi(poiMapper.convertDtoToPoi(false, availableTypes, dto.getNodeDtoList().get(0), dto.getRelationIdDtoList()));
-
-            if (i >= POI_PAGE_MAPPING) {
-                Timber.d("----- Mapping and saving  POI on " + Thread.currentThread().getName());
-                loadedElements += i;
-                publishProgress();
-                i = 0;
+        counter = 0;
+        if (FlavorUtils.isBus()){
+            for (BlockDto dto : blockDtos) {
+                killIfNeeded();
+                savePoi(poiMapper.convertDtoToPoi(false, availableTypes, dto.getNodeDtoList().get(0), dto.getRelationIdDtoList()));
+                manageProgress();
+                counter++;
             }
-            i++;
+        } else{
+            for (PoiDto dto : nodeDtos) {
+                killIfNeeded();
+                savePoi(poiMapper.convertDtoToPoi(false, availableTypes, dto, null));
+                manageProgress();
+                counter++;
+            }
         }
+
         nodeDtos.clear();
         blockDtos.clear();
+    }
+
+    private void manageProgress() {
+        if (counter >= POI_PAGE_MAPPING) {
+            Timber.d("----- Mapping and saving  POI on " + Thread.currentThread().getName());
+            loadedElements += counter;
+            publishProgress();
+            counter = 0;
+        }
     }
 
     private void savePoi(final Poi poi) {

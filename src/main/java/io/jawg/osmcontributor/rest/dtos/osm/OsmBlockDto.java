@@ -24,7 +24,7 @@ import org.simpleframework.xml.Root;
 import java.util.List;
 
 @Root(name = "osm", strict = false)
-public class OsmBlockDto {
+public class OsmBlockDto implements OsmDtoInterface {
 
     @ElementList(inline = true, required = false)
     private List<BlockDto> blockList;
@@ -32,6 +32,7 @@ public class OsmBlockDto {
     public OsmBlockDto() {
     }
 
+    @Override
     public List<BlockDto> getBlockList() {
         return blockList;
     }

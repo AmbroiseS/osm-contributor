@@ -41,6 +41,7 @@ import io.jawg.osmcontributor.rest.dtos.osm.ChangeSetDto;
 import io.jawg.osmcontributor.rest.dtos.osm.NodeDto;
 import io.jawg.osmcontributor.rest.dtos.osm.OsmBlockDto;
 import io.jawg.osmcontributor.rest.dtos.osm.OsmDto;
+import io.jawg.osmcontributor.rest.dtos.osm.OsmDtoInterface;
 import io.jawg.osmcontributor.rest.dtos.osm.TagDto;
 import io.jawg.osmcontributor.rest.dtos.osm.WayDto;
 import io.jawg.osmcontributor.rest.events.error.SyncUploadRetrofitErrorEvent;
@@ -48,6 +49,7 @@ import io.jawg.osmcontributor.rest.mappers.PoiMapper;
 import io.jawg.osmcontributor.rest.utils.AuthenticationRequestInterceptor;
 import io.jawg.osmcontributor.ui.managers.PoiManager;
 import io.jawg.osmcontributor.utils.Box;
+import io.jawg.osmcontributor.utils.FlavorUtils;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Response;
@@ -133,7 +135,98 @@ public class OsmBackend implements Backend {
      */
     @Override
     @NonNull
-    public List<OsmBlockDto> getPoisDtosInBox(final Box box) throws NetworkException {
+    public List<? extends OsmDtoInterface> getPoisDtosInBox(final Box box) throws NetworkException {
+        if (FlavorUtils.isBus()) {
+            return getBusNodesInbox(box);
+        } else {
+            return getAllPoisInBox(box);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
+    public List<OsmDto> getAllPoisInBox(final Box box) throws NetworkException {
+        Timber.d("Requesting overpass for download");
+
+        List<OsmDto> osmDtos = new ArrayList<>();
+
+        poiTypes = poiManager.loadPoiTypes();
+
+        for (Map.Entry<Long, PoiType> entry : poiTypes.entrySet()) {
+            final PoiType poiTypeDto = entry.getValue();
+            if (poiTypeDto.getQuery() != null) {
+                OSMProxy.Result<OsmDto> result = osmProxy.proceed(new OSMProxy.NetworkAction<OsmDto>() {
+                    @Override
+                    public OsmDto proceed() {
+                        // if it is a customize overpass request which contain ({{bbox}})
+                        // replace it by the coordinates of the current position
+                        if (poiTypeDto.getQuery().contains(BBOX)) {
+                            String format = poiTypeDto.getQuery().replace(BBOX, box.osmFormat());
+                            try {
+                                return overpassRestClient.sendRequest(format).execute().body();
+                            } catch (IOException e) {
+                                return null;
+                            }
+                        } else {
+                            try {
+                                return overpassRestClient.sendRequest(poiTypeDto.getQuery()).execute().body();
+                            } catch (IOException e) {
+                                return null;
+                            }
+                        }
+                    }
+                });
+
+                if (result != null) {
+                    OsmDto osmDto = result.getResult();
+                    if (osmDto != null) {
+                        osmDtos.add(osmDto);
+                    } else {
+                        throw new NetworkException();
+                    }
+                    poiTypes.remove(entry.getKey());
+                } else {
+                    throw new NetworkException();
+                }
+            }
+        }
+
+        if (!poiTypes.isEmpty()) {
+            OSMProxy.Result<OsmDto> result = osmProxy.proceed(new OSMProxy.NetworkAction<OsmDto>() {
+                @Override
+                public OsmDto proceed() {
+                    String request = generateOverpassRequest(box, poiTypes);
+                    try {
+                        return overpassRestClient.sendRequest(request).execute().body();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        return null;
+                    }
+                }
+            });
+            if (result != null) {
+                OsmDto osmDto = result.getResult();
+                if (osmDto != null) {
+                    osmDtos.add(osmDto);
+                } else {
+                    throw new NetworkException();
+                }
+            } else {
+                throw new NetworkException();
+            }
+        }
+        return osmDtos;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @NonNull
+    public List<OsmBlockDto> getBusNodesInbox(final Box box) throws NetworkException {
         List<OsmBlockDto> osmBlockDtos = new ArrayList<>();
 
         Timber.d("Requesting overpass for download");
@@ -149,13 +242,13 @@ public class OsmBackend implements Backend {
                     if (poiTypeDto.getQuery().contains(BBOX)) {
                         String format = poiTypeDto.getQuery().replace(BBOX, box.osmFormat());
                         try {
-                            return overpassRestClient.sendCustomRequest(format).execute().body();
+                            return overpassRestClient.sendRequestBlock(format).execute().body();
                         } catch (IOException e) {
                             return null;
                         }
                     } else {
                         try {
-                            return overpassRestClient.sendCustomRequest(poiTypeDto.getQuery()).execute().body();
+                            return overpassRestClient.sendRequestBlock(poiTypeDto.getQuery()).execute().body();
                         } catch (IOException e) {
                             return null;
                         }
@@ -176,12 +269,11 @@ public class OsmBackend implements Backend {
             }
         }
 
-
         if (!poiTypes.isEmpty()) {
             OSMProxy.Result<OsmBlockDto> result = osmProxy.proceed(() -> {
                 String request = generateOverpassRequest(box, poiTypes);
                 try {
-                    return overpassRestClient.sendCustomRequest(request).execute().body();
+                    return overpassRestClient.sendRequestBlock(request).execute().body();
                 } catch (IOException e) {
                     e.printStackTrace();
                     return null;
