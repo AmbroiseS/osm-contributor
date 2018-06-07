@@ -16,19 +16,29 @@
  * You should have received a copy of the GNU General Public License
  * along with OSM Contributor.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.jawg.osmcontributor.rest.clients;
+package io.jawg.osmcontributor.rest.dtos.osm;
 
-import io.jawg.osmcontributor.rest.dtos.osm.OsmBlockDto;
-import io.jawg.osmcontributor.rest.dtos.osm.OsmDto;
-import retrofit2.Call;
-import retrofit2.http.Body;
-import retrofit2.http.POST;
+import org.simpleframework.xml.ElementList;
+import org.simpleframework.xml.Root;
 
-public interface OverpassRestClient {
+import java.util.List;
 
-    @POST("0.6")
-    Call<OsmDto> sendRequest(@Body String data);
+@Root(name = "osm", strict = false)
+public class OsmBlockDto {
 
-    @POST("0.6")
-    Call<OsmBlockDto> sendCustomRequest(@Body String data);
+    @ElementList(inline = true, required = false)
+    private List<BlockDto> blockList;
+
+    public OsmBlockDto() {
+    }
+
+    public List<BlockDto> getBlockList() {
+        return blockList;
+    }
+
+    public void setBlockList(List<BlockDto> blockList) {
+        this.blockList = blockList;
+    }
+
 }
+

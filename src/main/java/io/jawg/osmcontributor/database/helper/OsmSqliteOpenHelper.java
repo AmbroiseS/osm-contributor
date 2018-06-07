@@ -44,6 +44,7 @@ import io.jawg.osmcontributor.model.entities.PoiNodeRef;
 import io.jawg.osmcontributor.model.entities.PoiTag;
 import io.jawg.osmcontributor.model.entities.PoiType;
 import io.jawg.osmcontributor.model.entities.PoiTypeTag;
+import io.jawg.osmcontributor.model.entities.RelationId;
 import io.jawg.osmcontributor.model.entities.Source;
 import timber.log.Timber;
 
@@ -74,6 +75,7 @@ public class OsmSqliteOpenHelper extends OrmLiteSqliteOpenHelper {
             TableUtils.createTable(connectionSource, Note.class);
             TableUtils.createTable(connectionSource, Comment.class);
             TableUtils.createTable(connectionSource, MapArea.class);
+            TableUtils.createTable(connectionSource, RelationId.class);
         } catch (SQLException e) {
             Timber.e(e, "Error while creating tables");
         }
@@ -141,6 +143,7 @@ public class OsmSqliteOpenHelper extends OrmLiteSqliteOpenHelper {
             TableUtils.dropTable(connectionSource, Condition.class, true);
             TableUtils.dropTable(connectionSource, Action.class, true);
             TableUtils.dropTable(connectionSource, MapArea.class, true);
+            TableUtils.dropTable(connectionSource, RelationId.class, true);
         } catch (SQLException e) {
             Timber.e(e, "Error while creating tables");
         }

@@ -9,6 +9,7 @@ import io.jawg.osmcontributor.database.dao.PoiDao;
 import io.jawg.osmcontributor.database.dao.PoiNodeRefDao;
 import io.jawg.osmcontributor.database.dao.PoiTagDao;
 import io.jawg.osmcontributor.database.dao.PoiTypeDao;
+import io.jawg.osmcontributor.database.dao.RelationIdDao;
 import io.jawg.osmcontributor.database.helper.DatabaseHelper;
 import io.jawg.osmcontributor.model.entities.MapArea;
 import io.jawg.osmcontributor.rest.Backend;
@@ -35,13 +36,15 @@ public class PoiRepository {
     private final PoiTypeDao poiTypeDao;
     private final PoiTagDao poiTagDao;
     private final PoiNodeRefDao poiNodeRefDao;
+    private final RelationIdDao relationIdDao;
     private final DatabaseHelper databaseHelper;
 
     /**
      * Construct a {@link PoiRepository}.
      */
     @Inject
-    public PoiRepository(PoiDao poiDao, Backend backend, MapAreaDao mapAreaDao, PoiMapper poiMapper, PoiTypeDao poiTypeDao, PoiTagDao poiTagDao, PoiNodeRefDao poiNodeRefDao, DatabaseHelper databaseHelper) {
+    public PoiRepository(PoiDao poiDao, Backend backend, MapAreaDao mapAreaDao, PoiMapper poiMapper, PoiTypeDao poiTypeDao, PoiTagDao poiTagDao,
+                         PoiNodeRefDao poiNodeRefDao, RelationIdDao relationIdDao, DatabaseHelper databaseHelper) {
         this.backend = backend;
         this.poiDao = poiDao;
         this.mapAreaDao = mapAreaDao;
@@ -49,6 +52,7 @@ public class PoiRepository {
         this.poiTypeDao = poiTypeDao;
         this.poiTagDao = poiTagDao;
         this.poiNodeRefDao = poiNodeRefDao;
+        this.relationIdDao = relationIdDao;
         this.databaseHelper = databaseHelper;
     }
 
@@ -56,7 +60,7 @@ public class PoiRepository {
         CancelableSubscriber cancelableSubscriber = new CancelableSubscriber<PoiLoadingProgress>() {
             @Override
             public void cancelableCall(Subscriber<? super PoiLoadingProgress> subscriber) {
-                PoiLoader poiLoader = new PoiLoader(poiDao, backend, mapAreaDao, subscriber, mustBeKilled, poiMapper, poiTypeDao, poiTagDao, poiNodeRefDao, databaseHelper);
+                PoiLoader poiLoader = new PoiLoader(poiDao, backend, mapAreaDao, subscriber, mustBeKilled, poiMapper, poiTypeDao, poiTagDao, poiNodeRefDao, relationIdDao, databaseHelper);
                 poiLoader.init(refreshData, mapArea);
                 poiLoader.getPoiFromBox(mapArea);
             }

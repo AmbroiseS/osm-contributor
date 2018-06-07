@@ -22,7 +22,7 @@ import java.util.List;
 
 import io.jawg.osmcontributor.model.entities.Poi;
 import io.jawg.osmcontributor.model.entities.PoiType;
-import io.jawg.osmcontributor.rest.dtos.osm.OsmDto;
+import io.jawg.osmcontributor.rest.dtos.osm.OsmBlockDto;
 import io.jawg.osmcontributor.utils.Box;
 
 /**
@@ -106,7 +106,7 @@ public interface Backend {
      */
     List<Poi> getPoisInBox(final Box box) throws NetworkException;
 
-    List<OsmDto> getPoisDtosInBox(final Box box) throws NetworkException;
+    List<OsmBlockDto> getPoisDtosInBox(final Box box) throws NetworkException;
 
     /**
      * Download a Poi from the backend by its id.

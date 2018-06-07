@@ -41,6 +41,7 @@ import io.jawg.osmcontributor.model.entities.PoiNodeRef;
 import io.jawg.osmcontributor.model.entities.PoiTag;
 import io.jawg.osmcontributor.model.entities.PoiType;
 import io.jawg.osmcontributor.model.entities.PoiTypeTag;
+import io.jawg.osmcontributor.model.entities.RelationId;
 import io.jawg.osmcontributor.model.entities.Source;
 import timber.log.Timber;
 
@@ -109,6 +110,11 @@ public class DatabaseModule {
     @Provides
     Dao<Action, Long> getActionDao(OsmSqliteOpenHelper helper) {
         return createDao(helper, Action.class);
+    }
+
+    @Provides
+    Dao<RelationId, Long> getRelationIdDao(OsmSqliteOpenHelper helper) {
+        return createDao(helper, RelationId.class);
     }
 
     @Provides
