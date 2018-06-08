@@ -82,6 +82,7 @@ public class OSMSyncWayManager implements SyncWayManager {
         return cmplReq.toString();
     }
 
+
     /**
      * {@inheritDoc}
      */

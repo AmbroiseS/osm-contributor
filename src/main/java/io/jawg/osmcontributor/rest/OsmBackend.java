@@ -39,7 +39,6 @@ import io.jawg.osmcontributor.rest.clients.OsmRestClient;
 import io.jawg.osmcontributor.rest.clients.OverpassRestClient;
 import io.jawg.osmcontributor.rest.dtos.osm.ChangeSetDto;
 import io.jawg.osmcontributor.rest.dtos.osm.NodeDto;
-import io.jawg.osmcontributor.rest.dtos.osm.OsmBlockDto;
 import io.jawg.osmcontributor.rest.dtos.osm.OsmDto;
 import io.jawg.osmcontributor.rest.dtos.osm.OsmDtoInterface;
 import io.jawg.osmcontributor.rest.dtos.osm.TagDto;
@@ -135,12 +134,8 @@ public class OsmBackend implements Backend {
      */
     @Override
     @NonNull
-    public List<? extends OsmDtoInterface> getPoisDtosInBox(final Box box) throws NetworkException {
-        if (FlavorUtils.isBus()) {
-            return getBusNodesInbox(box);
-        } else {
-            return getAllPoisInBox(box);
-        }
+    public List<OsmDtoInterface> getPoisDtosInBox(final Box box) throws NetworkException {
+        return requestPoisDtosInBox(box);
     }
 
     /**
@@ -148,86 +143,8 @@ public class OsmBackend implements Backend {
      */
     @Override
     @NonNull
-    public List<OsmDto> getAllPoisInBox(final Box box) throws NetworkException {
-        Timber.d("Requesting overpass for download");
-
-        List<OsmDto> osmDtos = new ArrayList<>();
-
-        poiTypes = poiManager.loadPoiTypes();
-
-        for (Map.Entry<Long, PoiType> entry : poiTypes.entrySet()) {
-            final PoiType poiTypeDto = entry.getValue();
-            if (poiTypeDto.getQuery() != null) {
-                OSMProxy.Result<OsmDto> result = osmProxy.proceed(new OSMProxy.NetworkAction<OsmDto>() {
-                    @Override
-                    public OsmDto proceed() {
-                        // if it is a customize overpass request which contain ({{bbox}})
-                        // replace it by the coordinates of the current position
-                        if (poiTypeDto.getQuery().contains(BBOX)) {
-                            String format = poiTypeDto.getQuery().replace(BBOX, box.osmFormat());
-                            try {
-                                return overpassRestClient.sendRequest(format).execute().body();
-                            } catch (IOException e) {
-                                return null;
-                            }
-                        } else {
-                            try {
-                                return overpassRestClient.sendRequest(poiTypeDto.getQuery()).execute().body();
-                            } catch (IOException e) {
-                                return null;
-                            }
-                        }
-                    }
-                });
-
-                if (result != null) {
-                    OsmDto osmDto = result.getResult();
-                    if (osmDto != null) {
-                        osmDtos.add(osmDto);
-                    } else {
-                        throw new NetworkException();
-                    }
-                    poiTypes.remove(entry.getKey());
-                } else {
-                    throw new NetworkException();
-                }
-            }
-        }
-
-        if (!poiTypes.isEmpty()) {
-            OSMProxy.Result<OsmDto> result = osmProxy.proceed(new OSMProxy.NetworkAction<OsmDto>() {
-                @Override
-                public OsmDto proceed() {
-                    String request = generateOverpassRequest(box, poiTypes);
-                    try {
-                        return overpassRestClient.sendRequest(request).execute().body();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        return null;
-                    }
-                }
-            });
-            if (result != null) {
-                OsmDto osmDto = result.getResult();
-                if (osmDto != null) {
-                    osmDtos.add(osmDto);
-                } else {
-                    throw new NetworkException();
-                }
-            } else {
-                throw new NetworkException();
-            }
-        }
-        return osmDtos;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @NonNull
-    public List<OsmBlockDto> getBusNodesInbox(final Box box) throws NetworkException {
-        List<OsmBlockDto> osmBlockDtos = new ArrayList<>();
+    public List<OsmDtoInterface> requestPoisDtosInBox(final Box box) throws NetworkException {
+        List<OsmDtoInterface> osmBlockDtos = new ArrayList<>();
 
         Timber.d("Requesting overpass for download");
 
@@ -236,27 +153,30 @@ public class OsmBackend implements Backend {
         for (Map.Entry<Long, PoiType> entry : poiTypes.entrySet()) {
             final PoiType poiTypeDto = entry.getValue();
             if (poiTypeDto.getQuery() != null) {
-                OSMProxy.Result<OsmBlockDto> result = osmProxy.proceed(() -> {
-                    // if it is a customize overpass request which contain ({{bbox}})
-                    // replace it by the coordinates of the current position
-                    if (poiTypeDto.getQuery().contains(BBOX)) {
-                        String format = poiTypeDto.getQuery().replace(BBOX, box.osmFormat());
+                OSMProxy.Result<OsmDtoInterface> result;
+                // if it is a customize overpass request which contain ({{bbox}})
+                // replace it by the coordinates of the current position
+                String format = poiTypeDto.getQuery().contains(BBOX) ? poiTypeDto.getQuery().replace(BBOX, box.osmFormat()) : poiTypeDto.getQuery();
+                if (FlavorUtils.isBus()) {
+                    result = osmProxy.proceed(() -> {
                         try {
                             return overpassRestClient.sendRequestBlock(format).execute().body();
                         } catch (IOException e) {
                             return null;
                         }
-                    } else {
+                    });
+                } else {
+                    result = osmProxy.proceed(() -> {
                         try {
-                            return overpassRestClient.sendRequestBlock(poiTypeDto.getQuery()).execute().body();
+                            return overpassRestClient.sendRequest(format).execute().body();
                         } catch (IOException e) {
                             return null;
                         }
-                    }
-                });
+                    });
+                }
 
                 if (result != null) {
-                    OsmBlockDto osmDto = result.getResult();
+                    OsmDtoInterface osmDto = result.getResult();
                     if (osmDto != null) {
                         osmBlockDtos.add(osmDto);
                     } else {
@@ -270,17 +190,27 @@ public class OsmBackend implements Backend {
         }
 
         if (!poiTypes.isEmpty()) {
-            OSMProxy.Result<OsmBlockDto> result = osmProxy.proceed(() -> {
+            OSMProxy.Result<OsmDtoInterface> result = osmProxy.proceed(() -> {
                 String request = generateOverpassRequest(box, poiTypes);
-                try {
-                    return overpassRestClient.sendRequestBlock(request).execute().body();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    return null;
+                if (FlavorUtils.isBus()){
+                    try {
+                        return overpassRestClient.sendRequestBlock(request).execute().body();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        return null;
+                    }
+                } else {
+                    try {
+                        return overpassRestClient.sendRequest(request).execute().body();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        return null;
+                    }
                 }
+
             });
             if (result != null) {
-                OsmBlockDto osmDto = result.getResult();
+                OsmDtoInterface osmDto = result.getResult();
                 if (osmDto != null) {
                     osmBlockDtos.add(osmDto);
                 } else {

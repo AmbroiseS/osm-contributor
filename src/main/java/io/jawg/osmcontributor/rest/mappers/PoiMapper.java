@@ -68,7 +68,7 @@ public class PoiMapper {
 
     }
 
-    public List<Poi> convertPois(List<? extends OsmDtoInterface> osmDtos) {
+    public List<Poi> convertPois(List<OsmDtoInterface> osmDtos) {
         List<Poi> pois = new ArrayList<>();
         if (FlavorUtils.isBus()) {
             for (OsmDtoInterface osmBlockDto : osmDtos) {

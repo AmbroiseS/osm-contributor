@@ -61,7 +61,7 @@ public class PoiLoader {
     private BooleanHolder mustBeKilled;
     List<PoiType> availableTypes;
     PoiTypeDao poiTypeDao;
-    List<? extends OsmDtoInterface> osmDtos;
+    List<OsmDtoInterface> osmDtos;
     List<PoiDto> nodeDtos = new ArrayList<>();
     List<BlockDto> blockDtos = new ArrayList<>();
 

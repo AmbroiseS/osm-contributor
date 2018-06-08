@@ -22,8 +22,6 @@ import java.util.List;
 
 import io.jawg.osmcontributor.model.entities.Poi;
 import io.jawg.osmcontributor.model.entities.PoiType;
-import io.jawg.osmcontributor.rest.dtos.osm.OsmBlockDto;
-import io.jawg.osmcontributor.rest.dtos.osm.OsmDto;
 import io.jawg.osmcontributor.rest.dtos.osm.OsmDtoInterface;
 import io.jawg.osmcontributor.utils.Box;
 
@@ -108,16 +106,12 @@ public interface Backend {
      */
     List<Poi> getPoisInBox(final Box box) throws NetworkException;
 
-    List<? extends OsmDtoInterface> getPoisDtosInBox(final Box box) throws NetworkException;
-    /**
-     * This method is user for the bus flavour of the application
-     */
-    List<OsmBlockDto> getBusNodesInbox(final Box box) throws NetworkException;
+    List<OsmDtoInterface> getPoisDtosInBox(final Box box) throws NetworkException;
 
     /**
-     * this method is used to get all pois in the main flavour application
+     * Get all pois in the current box
      */
-    List<OsmDto> getAllPoisInBox(final Box box) throws NetworkException;
+    List<? super OsmDtoInterface> requestPoisDtosInBox(final Box box) throws NetworkException;
 
     /**
      * Download a Poi from the backend by its id.
