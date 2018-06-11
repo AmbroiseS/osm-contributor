@@ -35,6 +35,9 @@ public class OsmDto implements OsmDtoInterface {
     @ElementList(inline = true, required = false)
     private List<WayDto> wayDtoList;
 
+    @ElementList(inline = true, required = false)
+    private List<RelationDisplayDto> relationDisplayDtoList;
+
     @Element(name = "changeset", required = false)
     private ChangeSetDto changeSetDto;
 
@@ -86,13 +89,23 @@ public class OsmDto implements OsmDtoInterface {
         this.permissionsDto = permissionsDto;
     }
 
+    public List<RelationDisplayDto> getRelationDisplayDtoList() {
+        return relationDisplayDtoList;
+    }
+
+    public void setRelationDisplayDtoList(List<RelationDisplayDto> relationDisplayDtoList) {
+        this.relationDisplayDtoList = relationDisplayDtoList;
+    }
 
     @Override
     public String toString() {
         return "OsmDto{" +
                 "nodeDtoList=" + nodeDtoList +
+                ", noteDtoList=" + noteDtoList +
                 ", wayDtoList=" + wayDtoList +
+                ", relationDisplayDtoList=" + relationDisplayDtoList +
                 ", changeSetDto=" + changeSetDto +
+                ", permissionsDto=" + permissionsDto +
                 '}';
     }
 }

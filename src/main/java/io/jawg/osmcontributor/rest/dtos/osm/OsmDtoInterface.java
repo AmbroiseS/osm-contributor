@@ -16,5 +16,9 @@ public interface OsmDtoInterface {
         return null;
     }
 
+    default List<RelationDisplayDto> getRelationDisplayDtoList() {
+        return null;
+    }
+
 
 }

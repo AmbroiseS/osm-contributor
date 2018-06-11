@@ -114,11 +114,16 @@ public interface Backend {
     List<? super OsmDtoInterface> requestPoisDtosInBox(final Box box) throws NetworkException;
 
     /**
-     * Download a Poi from the backend by its id.
-     *
-     * @param backendId The backend id of the Poi to download.
-     * @return The downloaded Poi.
+     * Get relationsDisplays to be displayed in jungle bus
      */
+    List<OsmDtoInterface> getBusRelationForDisplayInArea(Box box) throws NetworkException;
+
+        /**
+         * Download a Poi from the backend by its id.
+         *
+         * @param backendId The backend id of the Poi to download.
+         * @return The downloaded Poi.
+         */
     Poi getPoiById(String backendId);
 
     /**

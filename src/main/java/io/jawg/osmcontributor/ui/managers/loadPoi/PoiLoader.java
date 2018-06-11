@@ -17,6 +17,8 @@ import io.jawg.osmcontributor.database.dao.PoiDao;
 import io.jawg.osmcontributor.database.dao.PoiNodeRefDao;
 import io.jawg.osmcontributor.database.dao.PoiTagDao;
 import io.jawg.osmcontributor.database.dao.PoiTypeDao;
+import io.jawg.osmcontributor.database.dao.RelationDisplayDao;
+import io.jawg.osmcontributor.database.dao.RelationDisplayTagDao;
 import io.jawg.osmcontributor.database.dao.RelationIdDao;
 import io.jawg.osmcontributor.database.helper.DatabaseHelper;
 import io.jawg.osmcontributor.model.entities.MapArea;
@@ -26,14 +28,18 @@ import io.jawg.osmcontributor.model.entities.PoiNodeRef;
 import io.jawg.osmcontributor.model.entities.PoiTag;
 import io.jawg.osmcontributor.model.entities.PoiType;
 import io.jawg.osmcontributor.model.entities.RelationId;
+import io.jawg.osmcontributor.model.entities.relation_display.RelationDisplay;
+import io.jawg.osmcontributor.model.entities.relation_display.RelationDisplayTag;
 import io.jawg.osmcontributor.rest.Backend;
 import io.jawg.osmcontributor.rest.NetworkException;
 import io.jawg.osmcontributor.rest.dtos.osm.BlockDto;
 import io.jawg.osmcontributor.rest.dtos.osm.NodeDto;
 import io.jawg.osmcontributor.rest.dtos.osm.OsmDtoInterface;
 import io.jawg.osmcontributor.rest.dtos.osm.PoiDto;
+import io.jawg.osmcontributor.rest.dtos.osm.RelationDisplayDto;
 import io.jawg.osmcontributor.rest.dtos.osm.WayDto;
 import io.jawg.osmcontributor.rest.mappers.PoiMapper;
+import io.jawg.osmcontributor.rest.mappers.RelationDisplayMapper;
 import io.jawg.osmcontributor.ui.utils.BooleanHolder;
 import io.jawg.osmcontributor.utils.FlavorUtils;
 import rx.Subscriber;
@@ -53,17 +59,21 @@ public class PoiLoader {
     public static final int POI_PAGE_MAPPING = 5;
     private int counter;
     private final PoiDao poiDao;
+    private final RelationDisplayDao relationDisplayDao;
     private final MapAreaDao mapAreaDao;
     private final Backend backend;
     private Subscriber<? super PoiLoadingProgress> subscriber;
     private boolean refreshData;
     private PoiMapper poiMapper;
+    private RelationDisplayMapper relationDisplayMapper;
     private BooleanHolder mustBeKilled;
     List<PoiType> availableTypes;
     PoiTypeDao poiTypeDao;
     List<OsmDtoInterface> osmDtos;
+    List<OsmDtoInterface> relationDtos;
     List<PoiDto> nodeDtos = new ArrayList<>();
     List<BlockDto> blockDtos = new ArrayList<>();
+    List<RelationDisplayDto> relationDisplayDtos = new ArrayList<>();
 
     //progress
     private PoiLoadingProgress.LoadingStatus loadingStatus;
@@ -71,24 +81,30 @@ public class PoiLoader {
     private long totalsElements = 0L;
     private long loadedElements = 0L;
     private PoiTagDao poiTagDao;
+    private RelationDisplayTagDao relationDisplayTagDao;
     private PoiNodeRefDao poiNodeRefDao;
     private RelationIdDao relationIdDao;
-    private LocalDateTime lastUpate;
+    private LocalDateTime lastUpdate;
     private List<Poi> pois = new ArrayList<>();
     private List<Note> notes = new ArrayList<>();
     private DatabaseHelper databaseHelper;
     private MapArea mapArea;
 
 
-    public PoiLoader(PoiDao poiDao, Backend backend, MapAreaDao mapAreaDao, Subscriber<? super PoiLoadingProgress> subscriber,
-                     BooleanHolder mustBeKilled, PoiMapper poiMapper, PoiTypeDao poiTypeDao, PoiTagDao poiTagDao, PoiNodeRefDao poiNodeRefDao, RelationIdDao relationIdDao,
+    public PoiLoader(PoiDao poiDao, RelationDisplayDao relationDisplayDao, RelationDisplayTagDao relationDisplayTagDao,
+                     Backend backend, MapAreaDao mapAreaDao, Subscriber<? super PoiLoadingProgress> subscriber,
+                     BooleanHolder mustBeKilled, PoiMapper poiMapper, RelationDisplayMapper relationDisplayMapper, PoiTypeDao poiTypeDao,
+                     PoiTagDao poiTagDao, PoiNodeRefDao poiNodeRefDao, RelationIdDao relationIdDao,
                      DatabaseHelper databaseHelper) {
         this.backend = backend;
         this.poiDao = poiDao;
+        this.relationDisplayDao = relationDisplayDao;
+        this.relationDisplayTagDao = relationDisplayTagDao;
         this.mapAreaDao = mapAreaDao;
         this.subscriber = subscriber;
         this.mustBeKilled = mustBeKilled;
         this.poiMapper = poiMapper;
+        this.relationDisplayMapper = relationDisplayMapper;
         this.poiTypeDao = poiTypeDao;
         this.poiTagDao = poiTagDao;
         this.poiNodeRefDao = poiNodeRefDao;
@@ -120,15 +136,13 @@ public class PoiLoader {
         MapArea localArea = mapAreaDao.queryForId(areasNeeded.getId());
 
         if (localArea != null) {
-            LocalDateTime lastUpate;
-            lastUpate = new LocalDateTime(mapArea.getUpdateDate());
+            LocalDateTime lastUpdate = new LocalDateTime(mapArea.getUpdateDate());
             //we check if the data is outDated and ask for Update
-            if (LocalDateTime.now().isAfter(lastUpate.plusWeeks(1))) {
+            if (LocalDateTime.now().isAfter(lastUpdate.plusWeeks(1))) {
                 outDatedData = true;
-                this.lastUpate = lastUpate;
+                this.lastUpdate = lastUpdate;
             }
         }
-
 
         if (refreshData || localArea == null) {
             // some areas are not loaded in ou BD
@@ -156,6 +170,9 @@ public class PoiLoader {
         totalsElements = 0L;
         loadAndSavePoisFromBackend(toLoadArea, refreshData);
 
+        //for jungle bus, load relations for displaying purpose
+        loadAndSaveRelationDisplaysFromBackend(toLoadArea, refreshData);
+
         //publish poi loaded
         toLoadArea.setUpdateDate(new DateTime(System.currentTimeMillis()));
 
@@ -163,6 +180,7 @@ public class PoiLoader {
         mapAreaDao.createOrUpdate(toLoadArea);
 
     }
+
 
     private void loadAndSavePoisFromBackend(MapArea toLoadArea, boolean clean) {
         Boolean hasNetwork = OsmTemplateApplication.hasNetwork();
@@ -179,15 +197,11 @@ public class PoiLoader {
 
         for (OsmDtoInterface osmDto : osmDtos) {
             killIfNeeded();
-            if (FlavorUtils.isBus()){
+            if (FlavorUtils.isBus()) {
                 if (osmDto != null && osmDto.getBlockList() != null) {
                     for (BlockDto blockDto : osmDto.getBlockList()) {
                         if (blockDto != null && blockDto.getNodeDtoList() != null) {
-                            for (NodeDto nodeDto : blockDto.getNodeDtoList()) {
-                                if (nodeDto != null) {
-                                    blockDtos.add(blockDto);
-                                }
-                            }
+                            blockDtos.add(blockDto);
                         }
                     }
                 }
@@ -203,13 +217,12 @@ public class PoiLoader {
                     }
                 }
             }
-
         }
 
         osmDtos.clear();
 
         loadingStatus = MAPPING_POIS;
-        totalsElements = nodeDtos.size()>=blockDtos.size() ? nodeDtos.size() : blockDtos.size();
+        totalsElements = FlavorUtils.isBus() ? blockDtos.size() : nodeDtos.size();
 
         if (clean) {
             cleanArea(toLoadArea);
@@ -218,16 +231,35 @@ public class PoiLoader {
         savePoisInDB();
     }
 
+    private void loadAndSaveRelationDisplaysFromBackend(MapArea toLoadArea, boolean refreshData) {
+        relationDtos = backend.getBusRelationForDisplayInArea(toLoadArea.getBox());
+        relationDisplayDtos.clear();
+        for (OsmDtoInterface dto : relationDtos) {
+            if (dto != null && dto.getRelationDisplayDtoList() != null) {
+                relationDisplayDtos.addAll(dto.getRelationDisplayDtoList());
+            }
+
+        }
+        relationDtos.clear();
+        saveRelationDisplaysInDB();
+    }
+
+    private void saveRelationDisplaysInDB() {
+        for (RelationDisplayDto re : relationDisplayDtos) {
+            saveRelation(relationDisplayMapper.convertDTOtoRelation(re));
+        }
+    }
+
     private void savePoisInDB() {
         counter = 0;
-        if (FlavorUtils.isBus()){
+        if (FlavorUtils.isBus()) {
             for (BlockDto dto : blockDtos) {
                 killIfNeeded();
                 savePoi(poiMapper.convertDtoToPoi(false, availableTypes, dto.getNodeDtoList().get(0), dto.getRelationIdDtoList()));
                 manageProgress();
                 counter++;
             }
-        } else{
+        } else {
             for (PoiDto dto : nodeDtos) {
                 killIfNeeded();
                 savePoi(poiMapper.convertDtoToPoi(false, availableTypes, dto, null));
@@ -281,6 +313,25 @@ public class PoiLoader {
         }
     }
 
+    private void saveRelation(final RelationDisplay relationDisplay) {
+        try {
+            TransactionManager.callInTransaction(relationDisplayDao.getConnectionSource(),
+                    (Callable<Void>) () -> {
+                        relationDisplayDao.create(relationDisplay);
+
+                        if (relationDisplay.getTags() != null) {
+                            for (RelationDisplayTag relationDisplayTag : relationDisplay.getTags()) {
+                                relationDisplayTag.setRelationDisplay(relationDisplay);
+                                relationDisplayTagDao.create(relationDisplayTag);
+                            }
+                        }
+                        return null;
+                    });
+        } catch (SQLException e) {
+            Timber.e(e, "error saving relationDisplay");
+        }
+    }
+
     private List<Long> cleanArea(final MapArea area) {
         final List<Long> poisModified = new ArrayList<>();
         databaseHelper.callInTransaction((Callable<Void>) () -> {
@@ -288,12 +339,14 @@ public class PoiLoader {
             List<Poi> poisToDelete = new ArrayList<>();
             Collection<PoiNodeRef> nodeRefs = new ArrayList<>();
             Collection<PoiTag> tags = new ArrayList<>();
+            Collection<RelationId> relationIds = new ArrayList<>();
 
             for (Poi poi : pois) {
                 if ((!poi.getToDelete() && !poi.getUpdated() && !poi.getOld())) {
                     nodeRefs.addAll(poi.getNodeRefs());
                     tags.addAll(poi.getTags());
                     poisToDelete.add(poi);
+                    relationIds.addAll(poi.getRelationIds());
                 } else {
                     poisModified.add(poi.getId());
                 }
@@ -303,15 +356,18 @@ public class PoiLoader {
                     poiNodeRefDao.delete(nodeRefs);
                     poiTagDao.delete(tags);
                     poiDao.delete(poisToDelete);
+                    relationIdDao.delete(relationIds);
                     nodeRefs.clear();
                     tags.clear();
                     poisToDelete.clear();
+                    relationIds.clear();
                 }
             }
 
             poiNodeRefDao.delete(nodeRefs);
             poiTagDao.delete(tags);
             poiDao.delete(poisToDelete);
+            relationIdDao.delete(relationIds);
             return null;
         });
         return poisModified;
@@ -331,7 +387,7 @@ public class PoiLoader {
         progress.setPois(pois);
         progress.setNotes(notes);
         progress.setDataNeedRefresh(dataNeedRefresh);
-        progress.setLastUpdateDate(lastUpate);
+        progress.setLastUpdateDate(lastUpdate);
         subscriber.onNext(progress);
         totalsElements = 0;
         loadedElements = 0;

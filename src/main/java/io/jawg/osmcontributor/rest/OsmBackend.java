@@ -63,15 +63,15 @@ public class OsmBackend implements Backend {
 
     public static final String[] OBJECT_TYPES = new String[]{"node", "way"};
     private static final String BBOX = "({{bbox}});";
-    PoiManager poiManager;
-    PoiAssetLoader poiAssetLoader;
-    OSMProxy osmProxy;
-    OverpassRestClient overpassRestClient;
-    OsmRestClient osmRestClient;
-    PoiMapper poiMapper;
-    EventBus bus;
-    LoginPreferences loginPreferences;
-    Map<Long, PoiType> poiTypes = null;
+    private PoiManager poiManager;
+    private PoiAssetLoader poiAssetLoader;
+    private OSMProxy osmProxy;
+    private OverpassRestClient overpassRestClient;
+    private OsmRestClient osmRestClient;
+    private PoiMapper poiMapper;
+    private EventBus bus;
+    private LoginPreferences loginPreferences;
+    private Map<Long, PoiType> poiTypes = null;
 
     public OsmBackend(LoginPreferences loginPreferences, EventBus bus, OSMProxy osmProxy, OverpassRestClient overpassRestClient,
                       OsmRestClient osmRestClient, PoiMapper poiMapper, PoiManager poiManager, PoiAssetLoader poiAssetLoader) {
@@ -144,7 +144,7 @@ public class OsmBackend implements Backend {
     @Override
     @NonNull
     public List<OsmDtoInterface> requestPoisDtosInBox(final Box box) throws NetworkException {
-        List<OsmDtoInterface> osmBlockDtos = new ArrayList<>();
+        List<OsmDtoInterface> osmDtos = new ArrayList<>();
 
         Timber.d("Requesting overpass for download");
 
@@ -178,7 +178,7 @@ public class OsmBackend implements Backend {
                 if (result != null) {
                     OsmDtoInterface osmDto = result.getResult();
                     if (osmDto != null) {
-                        osmBlockDtos.add(osmDto);
+                        osmDtos.add(osmDto);
                     } else {
                         throw new NetworkException();
                     }
@@ -192,7 +192,7 @@ public class OsmBackend implements Backend {
         if (!poiTypes.isEmpty()) {
             OSMProxy.Result<OsmDtoInterface> result = osmProxy.proceed(() -> {
                 String request = generateOverpassRequest(box, poiTypes);
-                if (FlavorUtils.isBus()){
+                if (FlavorUtils.isBus()) {
                     try {
                         return overpassRestClient.sendRequestBlock(request).execute().body();
                     } catch (IOException e) {
@@ -212,7 +212,7 @@ public class OsmBackend implements Backend {
             if (result != null) {
                 OsmDtoInterface osmDto = result.getResult();
                 if (osmDto != null) {
-                    osmBlockDtos.add(osmDto);
+                    osmDtos.add(osmDto);
                 } else {
                     throw new NetworkException();
                 }
@@ -220,7 +220,34 @@ public class OsmBackend implements Backend {
                 throw new NetworkException();
             }
         }
-        return osmBlockDtos;
+        return osmDtos;
+    }
+
+    @Override
+    public List<OsmDtoInterface> getBusRelationForDisplayInArea(Box box) {
+        List<OsmDtoInterface> osmDtos = new ArrayList<>();
+        Timber.d("Requesting overpass for downloading bus relations");
+
+        OSMProxy.Result<OsmDtoInterface> result = osmProxy.proceed(() -> {
+            try {
+                return overpassRestClient.sendRequest(getBusRelationRequest(box)).execute().body();
+            } catch (IOException e) {
+                e.printStackTrace();
+                return null;
+            }
+        });
+        if (result != null) {
+            OsmDtoInterface dto = result.getResult();
+            if (dto != null) {
+                osmDtos.add(dto);
+            }
+        }
+        return osmDtos;
+    }
+
+    private String getBusRelationRequest(Box box) {
+        String request = "relation[\"route\"=\"bus\"]({{bbox}});out tags;";
+        return request.replace(BBOX, box.osmFormat());
     }
 
     /**
