@@ -29,20 +29,24 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import io.jawg.osmcontributor.R;
+import io.jawg.osmcontributor.model.entities.relation_display.RelationDisplay;
+import io.jawg.osmcontributor.ui.adapters.parser.BusLineRelationDisplayParser;
 
 public class BusLineAdapter extends RecyclerView.Adapter<BusLineAdapter.BusLineHolder> {
-    private List<String> busLines;
+    private List<RelationDisplay> busLines;
     private RemoveBusListener removeBusListener;
+    private BusLineRelationDisplayParser relationNameParser;
 
     public void setRemoveBusListener(RemoveBusListener removeBusListener) {
         this.removeBusListener = removeBusListener;
     }
 
     public interface RemoveBusListener {
-        void onLineRemoved(String busLine);
+        void onLineRemoved(RelationDisplay busLine);
     }
 
-    public BusLineAdapter(List<String> busLines) {
+    public BusLineAdapter(List<RelationDisplay> busLines, BusLineRelationDisplayParser busLineRelationDisplayParser) {
+        this.relationNameParser = busLineRelationDisplayParser;
         this.busLines = busLines;
     }
 
@@ -54,8 +58,8 @@ public class BusLineAdapter extends RecyclerView.Adapter<BusLineAdapter.BusLineH
 
     @Override
     public void onBindViewHolder(final BusLineHolder holder, int position) {
-        final String busLine = busLines.get(position);
-        holder.getTextViewLineBus().setText(busLine);
+        final RelationDisplay busLine = busLines.get(position);
+        holder.getTextViewLineBus().setText(relationNameParser.getBusLineName(busLine));
         holder.getDeleteButton().setOnClickListener(view -> {
             busLines.remove(busLine);
             removeBusListener.onLineRemoved(busLine);

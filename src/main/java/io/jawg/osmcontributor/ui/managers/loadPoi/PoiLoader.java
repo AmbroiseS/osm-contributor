@@ -36,7 +36,7 @@ import io.jawg.osmcontributor.rest.dtos.osm.BlockDto;
 import io.jawg.osmcontributor.rest.dtos.osm.NodeDto;
 import io.jawg.osmcontributor.rest.dtos.osm.OsmDtoInterface;
 import io.jawg.osmcontributor.rest.dtos.osm.PoiDto;
-import io.jawg.osmcontributor.rest.dtos.osm.RelationDisplayDto;
+import io.jawg.osmcontributor.rest.dtos.osm.RelationDto;
 import io.jawg.osmcontributor.rest.dtos.osm.WayDto;
 import io.jawg.osmcontributor.rest.mappers.PoiMapper;
 import io.jawg.osmcontributor.rest.mappers.RelationDisplayMapper;
@@ -73,7 +73,7 @@ public class PoiLoader {
     List<OsmDtoInterface> relationDtos;
     List<PoiDto> nodeDtos = new ArrayList<>();
     List<BlockDto> blockDtos = new ArrayList<>();
-    List<RelationDisplayDto> relationDisplayDtos = new ArrayList<>();
+    List<RelationDto> relationDisplayDtos = new ArrayList<>();
 
     //progress
     private PoiLoadingProgress.LoadingStatus loadingStatus;
@@ -171,7 +171,7 @@ public class PoiLoader {
         loadAndSavePoisFromBackend(toLoadArea, refreshData);
 
         //for jungle bus, load relations for displaying purpose
-        loadAndSaveRelationDisplaysFromBackend(toLoadArea, refreshData);
+        //   loadAndSaveRelationDisplaysFromBackend(toLoadArea, refreshData);
 
         //publish poi loaded
         toLoadArea.setUpdateDate(new DateTime(System.currentTimeMillis()));
@@ -203,7 +203,12 @@ public class PoiLoader {
                         if (blockDto != null && blockDto.getNodeDtoList() != null) {
                             blockDtos.add(blockDto);
                         }
+
                     }
+                }
+                //for jungle bus, load relations for displaying purpose
+                if (osmDto != null && osmDto.getRelationDtoList() != null) {
+                    relationDisplayDtos.addAll(osmDto.getRelationDtoList());
                 }
             } else {
                 if (osmDto != null) {
@@ -229,24 +234,13 @@ public class PoiLoader {
         }
 
         savePoisInDB();
-    }
-
-    private void loadAndSaveRelationDisplaysFromBackend(MapArea toLoadArea, boolean refreshData) {
-        relationDtos = backend.getBusRelationForDisplayInArea(toLoadArea.getBox());
-        relationDisplayDtos.clear();
-        for (OsmDtoInterface dto : relationDtos) {
-            if (dto != null && dto.getRelationDisplayDtoList() != null) {
-                relationDisplayDtos.addAll(dto.getRelationDisplayDtoList());
-            }
-
-        }
-        relationDtos.clear();
         saveRelationDisplaysInDB();
     }
 
+
     private void saveRelationDisplaysInDB() {
-        for (RelationDisplayDto re : relationDisplayDtos) {
-            saveRelation(relationDisplayMapper.convertDTOtoRelation(re));
+        for (RelationDto re : relationDisplayDtos) {
+            saveRelationDisplay(relationDisplayMapper.convertDTOtoRelation(re));
         }
     }
 
@@ -313,13 +307,11 @@ public class PoiLoader {
         }
     }
 
-    private void saveRelation(final RelationDisplay relationDisplay) {
+    private void saveRelationDisplay(final RelationDisplay relationDisplay) {
         try {
             TransactionManager.callInTransaction(relationDisplayDao.getConnectionSource(),
                     (Callable<Void>) () -> {
-                        relationDisplayDao.create(relationDisplay);
-
-                        if (relationDisplay.getTags() != null) {
+                        if (relationDisplayDao.replaceOrCreate(relationDisplay) && relationDisplay.getTags() != null) {
                             for (RelationDisplayTag relationDisplayTag : relationDisplay.getTags()) {
                                 relationDisplayTag.setRelationDisplay(relationDisplay);
                                 relationDisplayTagDao.create(relationDisplayTag);

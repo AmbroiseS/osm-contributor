@@ -28,6 +28,7 @@ import java.util.List;
 
 /**
  * the complete relation Dto
+ * in some cases it will be partially downloaded and then mapped to {@link io.jawg.osmcontributor.model.entities.relation_display.RelationDisplay}
  */
 @Root(name = "relation", strict = false)
 public class RelationDto {
@@ -36,7 +37,7 @@ public class RelationDto {
     private String id;
 
     @Attribute(required = false)
-    private Long changeset;
+    private String changeset;
 
     @Attribute(required = false)
     private DateTime timestamp;
@@ -49,9 +50,6 @@ public class RelationDto {
 
     @Attribute(required = false)
     private String uid;
-
-    @Attribute(required = false)
-    private CenterDto centerDto;
 
     @ElementList(inline = true, required = false)
     private List<TagDto> tagsDtoList = new ArrayList<>();
@@ -67,11 +65,11 @@ public class RelationDto {
         this.id = id;
     }
 
-    public Long getChangeset() {
+    public String getChangeset() {
         return changeset;
     }
 
-    public void setChangeset(Long changeset) {
+    public void setChangeset(String changeset) {
         this.changeset = changeset;
     }
 
@@ -119,16 +117,24 @@ public class RelationDto {
         return memberDTOlist;
     }
 
-    public CenterDto getCenterDto() {
-        return centerDto;
-    }
-
-    public void setCenterDto(CenterDto centerDto) {
-        this.centerDto = centerDto;
-    }
-
     public void setMemberDTOlist(List<RelationMemberDto> memberDTOlist) {
-
         this.memberDTOlist = memberDTOlist;
+    }
+
+    public RelationDto() {
+    }
+
+    @Override
+    public String toString() {
+        return "RelationDto{" +
+                "id='" + id + '\'' +
+                ", changeset=" + changeset +
+                ", timestamp=" + timestamp +
+                ", version=" + version +
+                ", user='" + user + '\'' +
+                ", uid='" + uid + '\'' +
+                ", tagsDtoList=" + tagsDtoList +
+                ", memberDTOlist=" + memberDTOlist +
+                '}';
     }
 }

@@ -7,7 +7,7 @@ import javax.inject.Inject;
 
 import io.jawg.osmcontributor.model.entities.relation_display.RelationDisplay;
 import io.jawg.osmcontributor.model.entities.relation_display.RelationDisplayTag;
-import io.jawg.osmcontributor.rest.dtos.osm.RelationDisplayDto;
+import io.jawg.osmcontributor.rest.dtos.osm.RelationDto;
 import io.jawg.osmcontributor.rest.dtos.osm.TagDto;
 
 public class RelationDisplayMapper {
@@ -16,10 +16,10 @@ public class RelationDisplayMapper {
 
     }
 
-    public List<RelationDisplay> convertDTOstoRelationDisplays(List<RelationDisplayDto> dtos) {
+    public List<RelationDisplay> convertDTOstoRelationDisplays(List<RelationDto> dtos) {
         List<RelationDisplay> result = new ArrayList<>();
         if (dtos != null) {
-            for (RelationDisplayDto dto : dtos) {
+            for (RelationDto dto : dtos) {
                 RelationDisplay relation = convertDTOtoRelation(dto);
                 if (relation != null) {
                     result.add(relation);
@@ -29,7 +29,7 @@ public class RelationDisplayMapper {
         return result;
     }
 
-    public RelationDisplay convertDTOtoRelation(RelationDisplayDto dto) {
+    public RelationDisplay convertDTOtoRelation(RelationDto dto) {
         List<RelationDisplayTag> tags = new ArrayList<>();
 
         RelationDisplay relation = new RelationDisplay();

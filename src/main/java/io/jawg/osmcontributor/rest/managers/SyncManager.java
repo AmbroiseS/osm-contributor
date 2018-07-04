@@ -32,11 +32,14 @@ import javax.inject.Inject;
 import io.jawg.osmcontributor.BuildConfig;
 import io.jawg.osmcontributor.database.dao.PoiDao;
 import io.jawg.osmcontributor.database.dao.PoiTypeDao;
+import io.jawg.osmcontributor.database.dao.RelationSaveDao;
 import io.jawg.osmcontributor.database.events.DbInitializedEvent;
 import io.jawg.osmcontributor.database.events.InitDbEvent;
 import io.jawg.osmcontributor.model.entities.Note;
 import io.jawg.osmcontributor.model.entities.Poi;
 import io.jawg.osmcontributor.model.entities.PoiType;
+import io.jawg.osmcontributor.model.entities.relation.Relation;
+import io.jawg.osmcontributor.model.entities.relation_save.RelationSave;
 import io.jawg.osmcontributor.model.events.PoiTypesLoaded;
 import io.jawg.osmcontributor.model.events.PoisAndNotesDownloadedEvent;
 import io.jawg.osmcontributor.rest.Backend;
@@ -67,25 +70,29 @@ public class SyncManager {
     PoiManager poiManager;
     NoteManager noteManager;
     PoiDao poiDao;
+    RelationSaveDao relationSaveDao;
     PoiTypeDao poiTypeDao;
     EventBus bus;
     Backend backend;
     SyncWayManager syncWayManager;
+    SyncRelationManager syncRelationManager;
     SyncNoteManager syncNoteManager;
     LoginManager loginManager;
 
     @Inject
-    public SyncManager(Application application, PoiManager poiManager, LoginManager loginManager, NoteManager noteManager, PoiDao poiDao, PoiTypeDao poiTypeDao, EventBus bus, Backend backend, SyncWayManager syncWayManager, SyncNoteManager syncNoteManager) {
+    public SyncManager(Application application, PoiManager poiManager, LoginManager loginManager, NoteManager noteManager, PoiDao poiDao, RelationSaveDao relationSaveDao, PoiTypeDao poiTypeDao, EventBus bus, Backend backend, SyncWayManager syncWayManager, SyncNoteManager syncNoteManager, SyncRelationManager syncRelationManager) {
         this.application = application;
         this.poiManager = poiManager;
         this.noteManager = noteManager;
         this.loginManager = loginManager;
         this.poiDao = poiDao;
+        this.relationSaveDao = relationSaveDao;
         this.poiTypeDao = poiTypeDao;
         this.bus = bus;
         this.backend = backend;
         this.syncWayManager = syncWayManager;
         this.syncNoteManager = syncNoteManager;
+        this.syncRelationManager = syncRelationManager;
     }
 
 
@@ -111,7 +118,7 @@ public class SyncManager {
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void onPleaseUploadPoiChangesByIdsEvent(PleaseUploadPoiChangesByIdsEvent event) {
         if (loginManager.isUserLogged()) {
-            remoteAddOrUpdateOrDeletePois(event.getComment(), event.getPoiIds(), event.getPoiNodeRefIds());
+            remoteAddOrUpdateOrDelete(event.getComment(), event.getPoiIds(), event.getPoiNodeRefIds());
         } else {
             bus.post(new SyncUnauthorizedEvent());
         }
@@ -137,7 +144,7 @@ public class SyncManager {
 
     public Observable<Boolean> sync() {
         return Observable.create(subscriber -> {
-            subscriber.onNext(remoteAddOrUpdateOrDeletePois(BuildConfig.AUTO_COMMIT_CHANGESET, poiDao.queryForAllUpdated(), poiDao.queryForAllNew(), poiDao.queryToDelete()));
+            subscriber.onNext(remoteAddOrUpdateOrDelete(BuildConfig.AUTO_COMMIT_CHANGESET, poiDao.queryForAllUpdated(), poiDao.queryForAllNew(), poiDao.queryToDelete()));
             subscriber.onCompleted();
         });
     }
@@ -219,8 +226,14 @@ public class SyncManager {
      * @param poiNodeRefsId PoisNodeRef to upload
      * @return Whether everything was correctly sent to the remote or not.
      */
-    public boolean remoteAddOrUpdateOrDeletePois(String comment, List<Long> poisId, List<Long> poiNodeRefsId) {
+    public boolean remoteAddOrUpdateOrDelete(String comment, List<Long> poisId, List<Long> poiNodeRefsId) {
         final List<Poi> pois = poiDao.queryForIds(poisId);
+
+        List<RelationSave> relationsSaves = relationSaveDao.queryByPois(pois);
+
+        List<Relation> relationToUpdate = syncRelationManager.downloadRelationsForEdition(getBackendIdsOfRelations(relationsSaves));
+
+        List<Relation> relationsToUpload = syncRelationManager.applyChangesToRelations(relationToUpdate, relationsSaves);
 
         final List<Poi> updatedPois = new ArrayList<>(syncWayManager.downloadPoiForWayEdition(poiNodeRefsId));
 
@@ -229,14 +242,25 @@ public class SyncManager {
                 updatedPois.add(p);
             }
         }
-        return remoteAddOrUpdateOrDeletePois(comment, poiDao.queryForAllUpdated(), poiDao.queryForAllNew(), poiDao.queryToDelete());
+        return remoteAddOrUpdateOrDelete(comment, poiDao.queryForAllUpdated(), poiDao.queryForAllNew(), poiDao.queryToDelete(), relationsToUpload);
     }
 
-    private boolean remoteAddOrUpdateOrDeletePois(String comment, List<Poi> updatedPois, List<Poi> newPois, List<Poi> toDeletePois) {
+    private List<Long> getBackendIdsOfRelations(List<RelationSave> list) {
+        List<Long> result = new ArrayList<>();
+        for (RelationSave re : list) {
+            if (re.getBackendId() != null) {
+                result.add(Long.valueOf(re.getBackendId()));
+            }
+        }
+        return result;
+    }
+
+    private boolean remoteAddOrUpdateOrDelete(String comment, List<Poi> updatedPois, List<Poi> newPois, List<Poi> toDeletePois, List<Relation> updatedRelations) {
         boolean success = true;
         int successfullyAddedPoisCount = 0;
         int successfullyUpdatedPoisCount = 0;
         int successfullyDeletedPoisCount = 0;
+        int successfullyUpdatedRelationsCount = 0;
 
 
         if (updatedPois.size() == 0 && newPois.size() == 0 && toDeletePois.size() == 0) {
@@ -250,6 +274,7 @@ public class SyncManager {
                 successfullyAddedPoisCount = remoteAddPois(newPois, changeSetId);
                 successfullyUpdatedPoisCount = remoteUpdatePois(updatedPois, changeSetId);
                 successfullyDeletedPoisCount = remoteDeletePois(toDeletePois, changeSetId);
+
             }
             success = changeSetId != null
                     && successfullyAddedPoisCount == newPois.size()
@@ -259,6 +284,8 @@ public class SyncManager {
         bus.post(new SyncFinishUploadPoiEvent(successfullyAddedPoisCount, successfullyUpdatedPoisCount, successfullyDeletedPoisCount));
         return success;
     }
+
+
 
     // *********************************
     // ************ private ************
@@ -324,6 +351,23 @@ public class SyncManager {
     }
 
     /**
+     * Update a List of Relations to the backend.
+     *
+     * @param relations The List of Relations to update to the backend.
+     * @param changeSetId The changeSet in which the Relations are sent.
+     * @return The number of relations who where successfully updated.
+     */
+    private int remoteUpdateRelations(List<Relation> relations, String changeSetId) {
+        int count = 0;
+        for (Relation relation: relations) {
+            if (remoteUpdateRelation(relation, changeSetId)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
      * Update a Poi of the backend.
      *
      * @param poi         The Poi to update.
@@ -343,6 +387,42 @@ public class SyncManager {
                 return true;
             case FAILURE_CONFLICT:
                 bus.post(new SyncConflictingNodeErrorEvent(poi.getName(), poi.getId()));
+                Timber.e("Couldn't update poi %s: conflict, redownloading last version of poi", poi);
+                deleteAndRetrieveUnmodifiedPoi(poi);
+                return false;
+            case FAILURE_NOT_EXISTING:
+                Timber.e("Couldn't update poi %s, it didn't exist. Deleting the incriminated poi", poi);
+                poiManager.deletePoi(poi);
+                bus.post(new SyncConflictingNodeErrorEvent(poi.getName(), poi.getId()));
+                return false;
+            case FAILURE_UNKNOWN:
+            default:
+                Timber.e("Couldn't update poi %s. Deleting the incriminated poi", poi);
+                poiManager.deletePoi(poi);
+                bus.post(new SyncUploadRetrofitErrorEvent(poi.getId()));
+                return false;
+        }
+    }
+ /**
+     * Update a Relation of the backend.
+     *
+     * @param relation         The Relation to update.
+     * @param changeSetId The changeSet in which the Poi is sent.
+     * @return Whether the update was a success or not.
+     */
+    private boolean remoteUpdateRelation(final Relation relation, String changeSetId) {
+        Backend.UpdateResult updateResult = backend.updateRelation(relation, changeSetId);
+      //  poiManager.deleteOldPoiAssociated(re);
+
+        switch (updateResult.getStatus()) {
+            case SUCCESS:
+                poi.setVersion(updateResult.getVersion());
+                poi.setUpdated(false);
+                poiManager.savePoi(poi);
+                OsmAnswers.remotePoiAction(poi.getType().getTechnicalName(), "update");
+                return true;
+            case FAILURE_CONFLICT:
+                bus.post(new SyncConflictingNodeErrorEvent(re.getName(), poi.getId()));
                 Timber.e("Couldn't update poi %s: conflict, redownloading last version of poi", poi);
                 deleteAndRetrieveUnmodifiedPoi(poi);
                 return false;

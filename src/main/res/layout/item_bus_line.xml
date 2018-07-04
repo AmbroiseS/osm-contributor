@@ -33,27 +33,28 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center"
         android:id="@+id/content"
-        android:orientation="vertical">
+        android:orientation="horizontal">
 
         <io.jawg.osmcontributor.ui.utils.views.customs.TypeFaceTextView
             android:id="@+id/poi_bus_line_value"
             android:layout_width="match_parent"
+            android:layout_weight="1"
             android:layout_height="wrap_content"
             android:hint="@string/bus_line_hint"
             android:textColor="#424242"
             android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:layout_marginBottom="8dp"
             android:textSize="17sp"
             app:typeface="Roboto-Light.ttf" />
 
+        <include
+            android:id="@+id/item_bus_line_delete_button"
+            layout="@layout/card_delete_button"
+            android:layout_width="40dp"
+            android:layout_weight="0.4"
+            android:layout_height="40dp" />
     </LinearLayout>
 
-    <include
-        android:id="@+id/item_bus_line_delete_button"
-        layout="@layout/card_delete_button"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:layout_alignEnd="@id/content"
-        android:layout_alignRight="@+id/content"
-        android:layout_centerVertical="true" />
 </RelativeLayout>

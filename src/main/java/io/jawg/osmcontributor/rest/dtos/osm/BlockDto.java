@@ -13,6 +13,10 @@ import java.util.List;
  * <relation id=xxx ></relation>
  * <relation id=xxx ></relation>
  * </block>
+ * and then the relations to display with their tags
+ * <relation>
+ *     <tag></tag>
+ * </relation>
  */
 @Root(name = "block", strict = false)
 public class BlockDto {

@@ -16,19 +16,22 @@
  * You should have received a copy of the GNU General Public License
  * along with OSM Contributor.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.jawg.osmcontributor.model.entities.relation_display;
+
+
+package io.jawg.osmcontributor.model.entities.relation;
+
 
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 
-@DatabaseTable(tableName = RelationDisplayTag.TABLE_NAME)
-public class RelationDisplayTag {
-    public static final String TABLE_NAME = "RELATION_DISPLAY_TAG";
+@DatabaseTable(tableName = RelationTag.TABLE_NAME)
+public class RelationTag {
+    public static final String TABLE_NAME = "RELATION_TAG";
 
     public static final String ID = "ID";
     public static final String KEY = "KEY";
     public static final String VALUE = "VALUE";
-    public static final String RELATION_DISPLAY_ID = "RELATION_DISPLAY_ID";
+    public static final String RELATION_ID = "RELATION_ID";
 
     @DatabaseField(columnName = ID, generatedId = true, canBeNull = false)
     private Long id;
@@ -39,8 +42,8 @@ public class RelationDisplayTag {
     @DatabaseField(columnName = VALUE)
     private String value;
 
-    @DatabaseField(foreign = true, columnName = RELATION_DISPLAY_ID, canBeNull = false)
-    private RelationDisplay relationDisplay;
+    @DatabaseField(foreign = true, columnName = RELATION_ID, canBeNull = false)
+    private Relation relation;
 
     public Long getId() {
         return id;
@@ -66,22 +69,14 @@ public class RelationDisplayTag {
         this.value = value;
     }
 
-    public RelationDisplay getRelationDisplay() {
-        return relationDisplay;
+    public Relation getRelationDisplay() {
+        return relation;
     }
 
-    public void setRelationDisplay(RelationDisplay relationDisplay) {
-        this.relationDisplay = relationDisplay;
+    public void setRelationDisplay(Relation relation) {
+        this.relation = relation;
     }
 
-    @Override
-    public String toString() {
-        return "RelationDisplayTag{" +
-                "id=" + id +
-                ", key='" + key + '\'' +
-                ", value='" + value + '\'' +
-                ", relationDisplay=" + relationDisplay +
-                '}';
-    }
 }
+
 

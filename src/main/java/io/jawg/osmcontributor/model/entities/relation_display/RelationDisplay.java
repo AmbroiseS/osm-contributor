@@ -16,8 +16,6 @@
  * You should have received a copy of the GNU General Public License
  * along with OSM Contributor.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-
 package io.jawg.osmcontributor.model.entities.relation_display;
 
 import com.j256.ormlite.field.DatabaseField;
@@ -70,5 +68,31 @@ public class RelationDisplay {
         this.backendId = backendId;
     }
 
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        return backendId.equals(((RelationDisplay) o).getBackendId());
+    }
+
+    @Override
+    public int hashCode() {
+        return backendId != null ? backendId.hashCode() : super.hashCode();
+    }
+
+
+    @Override
+    public String toString() {
+        return "RelationDisplay{" +
+                "id=" + id +
+                ", backendId='" + backendId + '\'' +
+                ", tags=" + tags +
+                '}';
+    }
 }
 

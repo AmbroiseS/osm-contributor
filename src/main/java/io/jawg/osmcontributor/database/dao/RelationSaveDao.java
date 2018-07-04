@@ -27,34 +27,27 @@ import java.util.List;
 import javax.inject.Inject;
 
 import io.jawg.osmcontributor.database.helper.DatabaseHelper;
-import io.jawg.osmcontributor.model.entities.relation_display.RelationDisplayTag;
+import io.jawg.osmcontributor.model.entities.Poi;
+import io.jawg.osmcontributor.model.entities.relation_save.RelationSave;
 
 /**
- * Dao for {@link io.jawg.osmcontributor.model.entities.relation_display.RelationDisplayTag} objects.
+ * Dao for {@link io.jawg.osmcontributor.model.entities.relation_save.RelationSave} objects.
  */
-public class RelationDisplayTagDao extends RuntimeExceptionDao<RelationDisplayTag, Long> {
-
+public class RelationSaveDao extends RuntimeExceptionDao<RelationSave, Long> {
     @Inject
-    public RelationDisplayTagDao(Dao<RelationDisplayTag, Long> dao) {
+    public RelationSaveDao(Dao<RelationSave, Long> dao) {
         super(dao);
     }
 
     /**
-     * get the database relations ids of relations
-     * where the tag "name" contains search
-     * @param search
-     * @return
+     * Query for all RelationsDisplays by Backend Ids .
+     *
+     * @return The list of RelationDisplay.
      */
-    public List<Long> queryForRelationTagNamesRelationsIDs(String search) {
-        return DatabaseHelper.wrapException(() -> {
-            String statement=  queryBuilder().limit(10L)
-                    .where()
-                    .like(RelationDisplayTag.VALUE,"%"+search+"%" )
-                    .and()
-                    .eq(RelationDisplayTag.KEY, "name")
-                    .prepare().getStatement();
-            return queryRaw(statement, (columnNames, resultColumns) -> Long.valueOf(resultColumns[2])).getResults();
-        });
+    public List<RelationSave> queryByPois(final List<Poi> pois) {
+        return DatabaseHelper.wrapException(() -> queryBuilder()
+                .where().in(RelationSave.POI_ID, pois)
+                .query());
     }
 
 }

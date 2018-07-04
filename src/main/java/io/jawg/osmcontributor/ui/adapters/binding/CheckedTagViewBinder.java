@@ -2,6 +2,7 @@ package io.jawg.osmcontributor.ui.adapters.binding;
 
 import android.app.Activity;
 import android.support.v7.widget.RecyclerView;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -9,6 +10,8 @@ import android.widget.TextView;
 import java.lang.ref.WeakReference;
 
 import io.jawg.osmcontributor.R;
+import io.jawg.osmcontributor.model.entities.relation_display.RelationDisplay;
+import io.jawg.osmcontributor.model.entities.relation_save.RelationSave;
 import io.jawg.osmcontributor.ui.adapters.item.shelter.TagItem;
 
 public abstract class CheckedTagViewBinder<T extends RecyclerView.ViewHolder, H extends TagItem> implements TagViewBinder<T, H> {
@@ -41,5 +44,6 @@ public abstract class CheckedTagViewBinder<T extends RecyclerView.ViewHolder, H 
 
     public interface TagItemChangeListener {
         void onTagItemUpdated(TagItem updatedTag);
+        void onRelationForBusUpdated(Pair<RelationDisplay, RelationSave.RelationModificationType> relationIDAndModification);
     }
 }

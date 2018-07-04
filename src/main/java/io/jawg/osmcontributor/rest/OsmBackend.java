@@ -26,6 +26,7 @@ import org.greenrobot.eventbus.EventBus;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -35,6 +36,7 @@ import io.jawg.osmcontributor.database.preferences.LoginPreferences;
 import io.jawg.osmcontributor.model.entities.Poi;
 import io.jawg.osmcontributor.model.entities.PoiType;
 import io.jawg.osmcontributor.model.entities.PoiTypeTag;
+import io.jawg.osmcontributor.model.entities.relation.Relation;
 import io.jawg.osmcontributor.rest.clients.OsmRestClient;
 import io.jawg.osmcontributor.rest.clients.OverpassRestClient;
 import io.jawg.osmcontributor.rest.dtos.osm.ChangeSetDto;
@@ -45,6 +47,7 @@ import io.jawg.osmcontributor.rest.dtos.osm.TagDto;
 import io.jawg.osmcontributor.rest.dtos.osm.WayDto;
 import io.jawg.osmcontributor.rest.events.error.SyncUploadRetrofitErrorEvent;
 import io.jawg.osmcontributor.rest.mappers.PoiMapper;
+import io.jawg.osmcontributor.rest.mappers.RelationMapper;
 import io.jawg.osmcontributor.rest.utils.AuthenticationRequestInterceptor;
 import io.jawg.osmcontributor.ui.managers.PoiManager;
 import io.jawg.osmcontributor.utils.Box;
@@ -69,18 +72,20 @@ public class OsmBackend implements Backend {
     private OverpassRestClient overpassRestClient;
     private OsmRestClient osmRestClient;
     private PoiMapper poiMapper;
+    private RelationMapper relationMapper;
     private EventBus bus;
     private LoginPreferences loginPreferences;
     private Map<Long, PoiType> poiTypes = null;
 
     public OsmBackend(LoginPreferences loginPreferences, EventBus bus, OSMProxy osmProxy, OverpassRestClient overpassRestClient,
-                      OsmRestClient osmRestClient, PoiMapper poiMapper, PoiManager poiManager, PoiAssetLoader poiAssetLoader) {
+                      OsmRestClient osmRestClient, PoiMapper poiMapper, RelationMapper relationMapper, PoiManager poiManager, PoiAssetLoader poiAssetLoader) {
         this.loginPreferences = loginPreferences;
         this.bus = bus;
         this.osmProxy = osmProxy;
         this.overpassRestClient = overpassRestClient;
         this.osmRestClient = osmRestClient;
         this.poiMapper = poiMapper;
+        this.relationMapper = relationMapper;
         this.poiManager = poiManager;
         this.poiAssetLoader = poiAssetLoader;
     }
@@ -452,5 +457,56 @@ public class OsmBackend implements Backend {
     @Override
     public List<PoiType> getPoiTypes() {
         return poiAssetLoader.loadPoiTypesByDefault();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<Relation> getRelations(String backendIds) {
+        Call<OsmDto> relationCall = osmRestClient.getRelations(backendIds);
+        try {
+            Response<OsmDto> response = relationCall.execute();
+            if (response.isSuccessful()) {
+                OsmDto osmDto = response.body();
+                if (osmDto != null && osmDto.getRelationDtoList() != null) {
+                    List<Relation> relations = relationMapper.convertDTOstoRelations(osmDto.getRelationDtoList());
+                    if (relations.size() > 0)
+                        return relations;
+                }
+            }
+        } catch (IOException e) {
+            Timber.e(e, e.getMessage());
+        }
+        return Collections.emptyList();
+    }
+
+    @Override
+    public UpdateResult updateRelation(Relation relation, String transactionId) {
+        final OsmDto osmDto = new OsmDto();
+        osmDto.setRelationDtoList(singletonList(relationMapper.convertRelationToDTO(relation, transactionId)));
+
+        Call<ResponseBody> versionCall= osmRestClient.updateRelation(relation.getBackendId(), osmDto);
+
+        try {
+            Response<ResponseBody> response = versionCall.execute();
+            if (response.isSuccessful()) {
+                return new UpdateResult(ModificationStatus.SUCCESS, response.body().string());
+            } else {
+                if (response.code() == 400) {
+                    Timber.e("Couldn't update node, conflicting version");
+                    return new UpdateResult(ModificationStatus.FAILURE_CONFLICT, null);
+                } else if (response.code() == 404) {
+                    Timber.e("Couldn't update node, no existing node found with the id " + relation.getId());
+                    return new UpdateResult(ModificationStatus.FAILURE_NOT_EXISTING, null);
+                } else {
+                    Timber.e("Couldn't update node");
+                    return new UpdateResult(ModificationStatus.FAILURE_UNKNOWN, null);
+                }
+            }
+        } catch (IOException e) {
+            Timber.e(e, e.getMessage());
+        }
+        return new UpdateResult(ModificationStatus.FAILURE_UNKNOWN, null);
     }
 }

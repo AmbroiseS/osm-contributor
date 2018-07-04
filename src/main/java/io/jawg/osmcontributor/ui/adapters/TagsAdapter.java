@@ -20,6 +20,7 @@ package io.jawg.osmcontributor.ui.adapters;
 
 import android.app.Activity;
 import android.support.v7.widget.RecyclerView;
+import android.util.Pair;
 import android.view.ViewGroup;
 
 import org.greenrobot.eventbus.EventBus;
@@ -28,12 +29,15 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 
 import javax.inject.Inject;
 
 import io.jawg.osmcontributor.OsmTemplateApplication;
 import io.jawg.osmcontributor.model.entities.Poi;
+import io.jawg.osmcontributor.model.entities.relation_display.RelationDisplay;
+import io.jawg.osmcontributor.model.entities.relation_save.RelationSave;
 import io.jawg.osmcontributor.ui.adapters.binding.AutoCompleteViewBinder;
 import io.jawg.osmcontributor.ui.adapters.binding.BusLinesViewBinder;
 import io.jawg.osmcontributor.ui.adapters.binding.CheckedTagViewBinder;
@@ -80,7 +84,7 @@ public class TagsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
         viewBinders.add(new ConstantViewBinder(activity));
         viewBinders.add(new OpeningHoursViewBinder(activity, this));
         viewBinders.add(new RadioChoiceViewBinder(activity, this));
-        viewBinders.add(new BusLinesViewBinder(activity, this));
+        viewBinders.add(new BusLinesViewBinder(activity, this, poi.getRelationIds()));
 
         eventBus.register(this);
     }
@@ -200,11 +204,18 @@ public class TagsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
         return result;
     }
 
+    public List<RelationSave> getChangedRelations() {
+        return relationSaves;
+    }
+
     public boolean isChange() {
         for (TagItem tagItem : tagItemList) {
             if (tagItem.hasChanged()) {
                 return true;
             }
+        }
+        if (relationSaves.size() > 0) {
+            return true;
         }
         return change;
     }
@@ -216,6 +227,20 @@ public class TagsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
                 editTag(tagItem, updatedTag.getValue());
             }
         }
+    }
+
+    private List<RelationSave> relationSaves = new ArrayList<>();
+
+    @Override
+    public void onRelationForBusUpdated(Pair<RelationDisplay, RelationSave.RelationModificationType> relationIDAndModification) {
+        //first remove all previous modification made on the relation
+        ListIterator<RelationSave> iter = relationSaves.listIterator();
+        while (iter.hasNext()) {
+            if (iter.next().getBackendId().equals(relationIDAndModification.first.getBackendId())) {
+                iter.remove();
+            }
+        }
+        relationSaves.add(new RelationSave(relationIDAndModification.first.getBackendId(), poi, relationIDAndModification.second));
     }
 
     @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)

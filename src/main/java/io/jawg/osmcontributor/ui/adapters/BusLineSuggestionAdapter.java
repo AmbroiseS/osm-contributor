@@ -31,26 +31,27 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.jawg.osmcontributor.R;
-import io.jawg.osmcontributor.ui.adapters.parser.BusLineValueParserImpl;
-import io.jawg.osmcontributor.ui.managers.PoiManager;
+import io.jawg.osmcontributor.model.entities.relation_display.RelationDisplay;
+import io.jawg.osmcontributor.ui.adapters.parser.BusLineRelationDisplayParser;
+import io.jawg.osmcontributor.ui.managers.RelationManager;
 import timber.log.Timber;
 
 public class BusLineSuggestionAdapter extends BaseAdapter implements Filterable {
 
     private static final int LAYOUT = R.layout.simple_dropdown_item;
     private LayoutInflater layoutInflater;
-    private List<String> suggestionsList;
+    private List<RelationDisplay> suggestionsList;
     private Filter filter;
-    private PoiManager poiManager;
-    private BusLineValueParserImpl busLineValueParser;
-    private List<String> currentValues;
+    private RelationManager relationManager;
+    private List<RelationDisplay> currentValues;
+    BusLineRelationDisplayParser busLineRelationDisplayParser;
 
-    public BusLineSuggestionAdapter(Context context, PoiManager poiManager, BusLineValueParserImpl busLineValueParser, List<String> currentValues) {
+    public BusLineSuggestionAdapter(Context context, RelationManager relationManager, BusLineRelationDisplayParser busLineRelationDisplayParser, List<RelationDisplay> currentValues) {
         layoutInflater = LayoutInflater.from(context);
         suggestionsList = new ArrayList<>();
         filter = new SuggestionFilter();
-        this.poiManager = poiManager;
-        this.busLineValueParser = busLineValueParser;
+        this.relationManager = relationManager;
+        this.busLineRelationDisplayParser = busLineRelationDisplayParser;
         this.currentValues = currentValues;
     }
 
@@ -60,7 +61,7 @@ public class BusLineSuggestionAdapter extends BaseAdapter implements Filterable 
     }
 
     @Override
-    public String getItem(int position) {
+    public RelationDisplay getItem(int position) {
         return suggestionsList.get(position);
     }
 
@@ -83,7 +84,7 @@ public class BusLineSuggestionAdapter extends BaseAdapter implements Filterable 
             holder = (ViewHolder) convertView.getTag();
         }
 
-        holder.bind(suggestionsList.get(position));
+        holder.bind(busLineRelationDisplayParser.getBusLineName(suggestionsList.get(position)));
 
         return view;
     }
@@ -98,7 +99,7 @@ public class BusLineSuggestionAdapter extends BaseAdapter implements Filterable 
         private final TextView textView;
 
         public ViewHolder(View root) {
-            textView = (TextView) root.findViewById(android.R.id.text1);
+            textView = root.findViewById(android.R.id.text1);
         }
 
         public void bind(String item) {
@@ -115,20 +116,13 @@ public class BusLineSuggestionAdapter extends BaseAdapter implements Filterable 
                 return null;
             }
             String query = constraint.toString().trim();
-            List<String> values = poiManager.getValuesForBusLinesAutocompletion(query);
-            List<String> filtered = new ArrayList<>();
-            //parse values formatted as xx;yy;zz and keep only the ones matching the query
-            for (String s : values) {
-                List<String> temp = busLineValueParser.fromValue(s);
-                for (String te : temp) {
-                    if (!currentValues.contains(te) && !filtered.contains(te) && te.contains(query)) {
-                        filtered.add(te);
-                    }
-                }
-            }
+            List<RelationDisplay> values = relationManager.getValuesForBusLinesAutocompletion(query);
+
+            values.removeAll(currentValues);
+            suggestionsList = values;
 
             FilterResults results = new FilterResults();
-            results.values = filtered;
+            results.values = suggestionsList;
             results.count = values.size();
             return results;
         }
@@ -141,7 +135,7 @@ public class BusLineSuggestionAdapter extends BaseAdapter implements Filterable 
             }
 
             //noinspection unchecked
-            suggestionsList = (List<String>) results.values;
+            suggestionsList = (List<RelationDisplay>) results.values;
             if (results.count > 0) {
                 notifyDataSetChanged();
             } else {
@@ -151,7 +145,7 @@ public class BusLineSuggestionAdapter extends BaseAdapter implements Filterable 
 
         @Override
         public CharSequence convertResultToString(Object resultValue) {
-            return (String) resultValue;
+            return  busLineRelationDisplayParser.getBusLineName((RelationDisplay) resultValue);
         }
     }
 }

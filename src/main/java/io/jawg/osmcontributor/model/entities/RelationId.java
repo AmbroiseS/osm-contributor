@@ -29,7 +29,7 @@ public class RelationId {
         this.id = id;
     }
 
-    public String getRelationId() {
+    public String getBackendRelationId() {
         return relationId;
     }
 

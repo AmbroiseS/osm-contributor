@@ -22,8 +22,12 @@ package io.jawg.osmcontributor.database.dao;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.RuntimeExceptionDao;
 
+import java.util.Collections;
+import java.util.List;
+
 import javax.inject.Inject;
 
+import io.jawg.osmcontributor.database.helper.DatabaseHelper;
 import io.jawg.osmcontributor.model.entities.relation_display.RelationDisplay;
 
 /**
@@ -35,4 +39,37 @@ public class RelationDisplayDao extends RuntimeExceptionDao<RelationDisplay, Lon
     public RelationDisplayDao(Dao<RelationDisplay, Long> dao) {
         super(dao);
     }
+
+
+    /**
+     * Query for all RelationsDisplays by Backend Ids .
+     *
+     * @return The list of RelationDisplay.
+     */
+    public List<RelationDisplay> queryByBackendRelationIds(final List<Long> relationsIds) {
+        return DatabaseHelper.wrapException(() -> queryBuilder()
+                .where().in(RelationDisplay.BACKEND_ID, relationsIds)
+                .query());
+    }
+
+    public boolean replaceOrCreate(RelationDisplay relationDisplay) {
+        if (queryByBackendRelationIds(Collections.singletonList(Long.valueOf(relationDisplay.getBackendId()))).isEmpty()) {
+            create(relationDisplay);
+            return true;
+        }
+        return false;
+    }
+
+
+    /**
+     * Query for all RelationsDisplays by their database Ids .
+     *
+     * @return The list of RelationDisplay.
+     */
+    public List<RelationDisplay> queryByDatabaseIds(final List<Long> dbIds) {
+        return DatabaseHelper.wrapException(() -> queryBuilder()
+                .where().in(RelationDisplay.ID, dbIds)
+                .query());
+    }
+
 }

@@ -29,6 +29,9 @@ public class OsmBlockDto implements OsmDtoInterface {
     @ElementList(inline = true, required = false)
     private List<BlockDto> blockList;
 
+    @ElementList(inline = true, required = false)
+    private List<RelationDto> relationDtoList;
+
     public OsmBlockDto() {
     }
 
@@ -41,5 +44,13 @@ public class OsmBlockDto implements OsmDtoInterface {
         this.blockList = blockList;
     }
 
+    @Override
+    public List<RelationDto> getRelationDtoList() {
+        return relationDtoList;
+    }
+
+    public void setRelationDtoList(List<RelationDto> relationDtoList) {
+        this.relationDtoList = relationDtoList;
+    }
 }
 

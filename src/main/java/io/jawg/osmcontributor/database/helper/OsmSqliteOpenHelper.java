@@ -46,8 +46,12 @@ import io.jawg.osmcontributor.model.entities.PoiType;
 import io.jawg.osmcontributor.model.entities.PoiTypeTag;
 import io.jawg.osmcontributor.model.entities.RelationId;
 import io.jawg.osmcontributor.model.entities.Source;
+import io.jawg.osmcontributor.model.entities.relation.Relation;
+import io.jawg.osmcontributor.model.entities.relation.RelationMember;
+import io.jawg.osmcontributor.model.entities.relation.RelationTag;
 import io.jawg.osmcontributor.model.entities.relation_display.RelationDisplay;
 import io.jawg.osmcontributor.model.entities.relation_display.RelationDisplayTag;
+import io.jawg.osmcontributor.model.entities.relation_save.RelationSave;
 import timber.log.Timber;
 
 public class OsmSqliteOpenHelper extends OrmLiteSqliteOpenHelper {
@@ -80,6 +84,10 @@ public class OsmSqliteOpenHelper extends OrmLiteSqliteOpenHelper {
             TableUtils.createTable(connectionSource, RelationId.class);
             TableUtils.createTable(connectionSource, RelationDisplay.class);
             TableUtils.createTable(connectionSource, RelationDisplayTag.class);
+            TableUtils.createTable(connectionSource, Relation.class);
+            TableUtils.createTable(connectionSource, RelationMember.class);
+            TableUtils.createTable(connectionSource, RelationTag.class);
+            TableUtils.createTable(connectionSource, RelationSave.class);
         } catch (SQLException e) {
             Timber.e(e, "Error while creating tables");
         }
@@ -148,8 +156,12 @@ public class OsmSqliteOpenHelper extends OrmLiteSqliteOpenHelper {
             TableUtils.dropTable(connectionSource, Action.class, true);
             TableUtils.dropTable(connectionSource, MapArea.class, true);
             TableUtils.dropTable(connectionSource, RelationId.class, true);
-            TableUtils.dropTable(connectionSource, RelationDisplay.class,true);
+            TableUtils.dropTable(connectionSource, RelationDisplay.class, true);
             TableUtils.dropTable(connectionSource, RelationDisplayTag.class, true);
+            TableUtils.dropTable(connectionSource, Relation.class, true);
+            TableUtils.dropTable(connectionSource, RelationMember.class, true);
+            TableUtils.dropTable(connectionSource, RelationTag.class, true);
+            TableUtils.dropTable(connectionSource, RelationSave.class, true);
         } catch (SQLException e) {
             Timber.e(e, "Error while creating tables");
         }

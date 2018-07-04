@@ -22,6 +22,7 @@ import java.util.List;
 
 import io.jawg.osmcontributor.model.entities.Poi;
 import io.jawg.osmcontributor.model.entities.PoiType;
+import io.jawg.osmcontributor.model.entities.relation.Relation;
 import io.jawg.osmcontributor.rest.dtos.osm.OsmDtoInterface;
 import io.jawg.osmcontributor.utils.Box;
 
@@ -118,12 +119,12 @@ public interface Backend {
      */
     List<OsmDtoInterface> getBusRelationForDisplayInArea(Box box) throws NetworkException;
 
-        /**
-         * Download a Poi from the backend by its id.
-         *
-         * @param backendId The backend id of the Poi to download.
-         * @return The downloaded Poi.
-         */
+    /**
+     * Download a Poi from the backend by its id.
+     *
+     * @param backendId The backend id of the Poi to download.
+     * @return The downloaded Poi.
+     */
     Poi getPoiById(String backendId);
 
     /**
@@ -160,5 +161,21 @@ public interface Backend {
      */
     List<PoiType> getPoiTypes();
 
+    /**
+     * Download Relations from the backend.
+     *
+     * @param backendIds The backend ids of the Relations to download.
+     * @return The downloaded Relations.
+     */
+    List<Relation> getRelations(String backendIds);
+
+    /**
+     * Update a Relation in the backend.
+     *
+     * @param relation      The Relation to update in the backend.
+     * @param transactionId The transaction in which the update must be done.
+     * @return The result of the update.
+     */
+    UpdateResult updateRelation(Relation relation, String transactionId);
 
 }

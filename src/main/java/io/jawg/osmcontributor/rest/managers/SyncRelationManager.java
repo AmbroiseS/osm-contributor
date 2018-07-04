@@ -16,29 +16,24 @@
  * You should have received a copy of the GNU General Public License
  * along with OSM Contributor.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.jawg.osmcontributor.ui.events.edition;
+package io.jawg.osmcontributor.rest.managers;
 
-
-import java.util.Collections;
 import java.util.List;
 
+import io.jawg.osmcontributor.model.entities.relation.Relation;
 import io.jawg.osmcontributor.model.entities.relation_save.RelationSave;
-import io.jawg.osmcontributor.utils.edition.PoiChanges;
 
-public class PleaseApplyPoiChanges {
-    private final PoiChanges poiChanges;
-    private List<RelationSave> relationSaves;
+/**
+ * Manage the synchronization of relations between the backend and the application.
+ */
+public interface SyncRelationManager {
+    /**
+     * Download from the backend, the complete Relations objects.
+     *
+     * @param ids ids of relations to download.
+     * @return The corresponding Relations.
+     */
+    List<Relation> downloadRelationsForEdition(List<Long> ids);
 
-    public PleaseApplyPoiChanges(PoiChanges poiChanges, List<RelationSave> relationSaves) {
-        this.relationSaves = relationSaves == null ? Collections.emptyList() : relationSaves;
-        this.poiChanges = poiChanges;
-    }
-
-    public PoiChanges getPoiChanges() {
-        return poiChanges;
-    }
-
-    public List<RelationSave> getRelationSaves() {
-        return relationSaves;
-    }
+    List<Relation> applyChangesToRelations(List<Relation> relations, List<RelationSave> relationSaves);
 }

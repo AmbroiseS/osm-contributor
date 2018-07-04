@@ -43,8 +43,12 @@ import io.jawg.osmcontributor.model.entities.PoiType;
 import io.jawg.osmcontributor.model.entities.PoiTypeTag;
 import io.jawg.osmcontributor.model.entities.RelationId;
 import io.jawg.osmcontributor.model.entities.Source;
+import io.jawg.osmcontributor.model.entities.relation.Relation;
+import io.jawg.osmcontributor.model.entities.relation.RelationMember;
+import io.jawg.osmcontributor.model.entities.relation.RelationTag;
 import io.jawg.osmcontributor.model.entities.relation_display.RelationDisplay;
 import io.jawg.osmcontributor.model.entities.relation_display.RelationDisplayTag;
+import io.jawg.osmcontributor.model.entities.relation_save.RelationSave;
 import timber.log.Timber;
 
 /**
@@ -127,6 +131,26 @@ public class DatabaseModule {
     @Provides
     Dao<RelationDisplayTag, Long> getRelationDisplayTagDao(OsmSqliteOpenHelper helper) {
         return createDao(helper, RelationDisplayTag.class);
+    }
+
+    @Provides
+    Dao<Relation, Long> getRelationDao(OsmSqliteOpenHelper helper) {
+        return createDao(helper, Relation.class);
+    }
+
+    @Provides
+    Dao<RelationMember, Long> getRelationMemberDao(OsmSqliteOpenHelper helper) {
+        return createDao(helper, RelationMember.class);
+    }
+
+    @Provides
+    Dao<RelationTag, Long> getRelationTagDao(OsmSqliteOpenHelper helper) {
+        return createDao(helper, RelationTag.class);
+    }
+
+    @Provides
+    Dao<RelationSave, Long> getRelationSaveDao(OsmSqliteOpenHelper helper) {
+        return createDao(helper, RelationSave.class);
     }
 
     @Provides

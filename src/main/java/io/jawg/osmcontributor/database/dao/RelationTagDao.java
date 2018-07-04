@@ -16,29 +16,23 @@
  * You should have received a copy of the GNU General Public License
  * along with OSM Contributor.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.jawg.osmcontributor.ui.events.edition;
 
+package io.jawg.osmcontributor.database.dao;
 
-import java.util.Collections;
-import java.util.List;
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.RuntimeExceptionDao;
 
-import io.jawg.osmcontributor.model.entities.relation_save.RelationSave;
-import io.jawg.osmcontributor.utils.edition.PoiChanges;
+import javax.inject.Inject;
 
-public class PleaseApplyPoiChanges {
-    private final PoiChanges poiChanges;
-    private List<RelationSave> relationSaves;
+import io.jawg.osmcontributor.model.entities.relation.RelationTag;
 
-    public PleaseApplyPoiChanges(PoiChanges poiChanges, List<RelationSave> relationSaves) {
-        this.relationSaves = relationSaves == null ? Collections.emptyList() : relationSaves;
-        this.poiChanges = poiChanges;
-    }
+/**
+ * Dao for {@link io.jawg.osmcontributor.model.entities.relation.RelationTag} objects.
+ */
+public class RelationTagDao extends RuntimeExceptionDao<RelationTag, Long> {
 
-    public PoiChanges getPoiChanges() {
-        return poiChanges;
-    }
-
-    public List<RelationSave> getRelationSaves() {
-        return relationSaves;
+    @Inject
+    public RelationTagDao(Dao<RelationTag, Long> dao) {
+        super(dao);
     }
 }
